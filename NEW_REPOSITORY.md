@@ -32,15 +32,16 @@ git -C root.diyaccounting.co.uk push newhome --tags
 
 This branch (`claude/migrate-to-support-at-diyaccounting`) updates stale `antonycc` references. Replacement rules applied:
 
-| Old reference | New reference |
-|---|---|
-| `antonycc/root.diyaccounting.co.uk` | `support-at-diyaccounting/root.diyaccounting.co.uk` |
-| `antonycc/submit.diyaccounting.co.uk` | `support-at-diyaccounting/submit.diyaccounting.co.uk` |
-| `antonycc/www.diyaccounting.co.uk` | `support-at-diyaccounting/www.diyaccounting.co.uk` |
-| `antonycc/diy-accounting` | `support-at-diyaccounting/spreadsheets.diyaccounting.co.uk` (renamed during migration) |
-| `@antonycc/root-diyaccounting-co-uk` (npm scope) | `@support-at-diyaccounting/root-diyaccounting-co-uk` |
+| Old reference                                    | New reference                                                                          |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `antonycc/root.diyaccounting.co.uk`              | `support-at-diyaccounting/root.diyaccounting.co.uk`                                    |
+| `antonycc/submit.diyaccounting.co.uk`            | `support-at-diyaccounting/submit.diyaccounting.co.uk`                                  |
+| `antonycc/www.diyaccounting.co.uk`               | `support-at-diyaccounting/www.diyaccounting.co.uk`                                     |
+| `antonycc/diy-accounting`                        | `support-at-diyaccounting/spreadsheets.diyaccounting.co.uk` (renamed during migration) |
+| `@antonycc/root-diyaccounting-co-uk` (npm scope) | `@support-at-diyaccounting/root-diyaccounting-co-uk`                                   |
 
 Files affected:
+
 - `CLAUDE.md`, `README.md`
 - `package.json`
 - `infra/main/java/co/uk/diyaccounting/root/stacks/ApexStack.java` — CDK stack tags
@@ -72,16 +73,16 @@ The IAM roles in account **887764105431 (management)** that GitHub Actions assum
 
 Set on this repo via `gh variable set`:
 
-| Variable | Value source |
-|---|---|
-| `ROOT_ACCOUNT_ID` | `887764105431` |
-| `ROOT_HOSTED_ZONE_ID` | `aws --profile management route53 list-hosted-zones-by-name --dns-name diyaccounting.co.uk --query 'HostedZones[0].Id' --output text` (strip `/hostedzone/` prefix) |
-| `ROOT_ACTIONS_ROLE_ARN` | `aws --profile management iam get-role --role-name root-github-actions-role --query Role.Arn --output text` |
-| `ROOT_DEPLOY_ROLE_ARN` | `aws --profile management iam get-role --role-name root-deployment-role --query Role.Arn --output text` |
-| `GATEWAY_ACTIONS_ROLE_ARN` | `aws --profile gateway iam get-role --role-name gateway-github-actions-role --query Role.Arn --output text` |
-| `GATEWAY_DEPLOY_ROLE_ARN` | `aws --profile gateway iam get-role --role-name gateway-deployment-role --query Role.Arn --output text` |
-| `SPREADSHEETS_ACTIONS_ROLE_ARN` | `aws --profile spreadsheets iam get-role --role-name spreadsheets-github-actions-role --query Role.Arn --output text` |
-| `SPREADSHEETS_DEPLOY_ROLE_ARN` | `aws --profile spreadsheets iam get-role --role-name spreadsheets-deployment-role --query Role.Arn --output text` |
+| Variable                          | Value source                                                                                                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ROOT_ACCOUNT_ID`                 | `887764105431`                                                                                                                                                                  |
+| `ROOT_HOSTED_ZONE_ID`             | `aws --profile management route53 list-hosted-zones-by-name --dns-name diyaccounting.co.uk --query 'HostedZones[0].Id' --output text` (strip `/hostedzone/` prefix)             |
+| `ROOT_ACTIONS_ROLE_ARN`           | `aws --profile management iam get-role --role-name root-github-actions-role --query Role.Arn --output text`                                                                     |
+| `ROOT_DEPLOY_ROLE_ARN`            | `aws --profile management iam get-role --role-name root-deployment-role --query Role.Arn --output text`                                                                         |
+| `GATEWAY_ACTIONS_ROLE_ARN`        | `aws --profile gateway iam get-role --role-name gateway-github-actions-role --query Role.Arn --output text`                                                                     |
+| `GATEWAY_DEPLOY_ROLE_ARN`         | `aws --profile gateway iam get-role --role-name gateway-deployment-role --query Role.Arn --output text`                                                                         |
+| `SPREADSHEETS_ACTIONS_ROLE_ARN`   | `aws --profile spreadsheets iam get-role --role-name spreadsheets-github-actions-role --query Role.Arn --output text`                                                           |
+| `SPREADSHEETS_DEPLOY_ROLE_ARN`    | `aws --profile spreadsheets iam get-role --role-name spreadsheets-deployment-role --query Role.Arn --output text`                                                               |
 | `SUBMIT_REGIONAL_CERTIFICATE_ARN` | `aws --profile submit-prod acm list-certificates --region eu-west-2 --query "CertificateSummaryList[?DomainName=='*.submit.diyaccounting.co.uk'].CertificateArn" --output text` |
 
 Cross-account variables (gateway, spreadsheets, submit) are set on root because the `deploy.yml` workflow does cross-account NS-record updates from the management account.
@@ -106,6 +107,7 @@ None required. No environment-scoped variables for this repo.
 ## How to obtain values
 
 ### Role ARNs
+
 ```bash
 aws --profile <profile> iam list-roles \
   --query "Roles[?contains(RoleName, 'github-actions') || contains(RoleName, 'deployment')].[RoleName,Arn]" \
@@ -113,12 +115,14 @@ aws --profile <profile> iam list-roles \
 ```
 
 ### Hosted Zone ID
+
 ```bash
 aws --profile management route53 list-hosted-zones \
   --query "HostedZones[?Name=='diyaccounting.co.uk.'].Id" --output text
 ```
 
 ### Certificate ARNs (regional, for SUBMIT_REGIONAL_CERTIFICATE_ARN)
+
 ```bash
 aws --profile submit-prod acm list-certificates --region eu-west-2 \
   --query "CertificateSummaryList[].[DomainName,CertificateArn]" --output table
