@@ -94,7 +94,7 @@ These variables are configured in **Settings > Secrets and variables > Actions >
 | `ROOT_ACCOUNT_ID`               | `887764105431`                                                    | Root account identifier            |
 | `ROOT_HOSTED_ZONE_ID`           | `Z0315522208PWZSSBI9AL`                                           | Route53 hosted zone ID             |
 
-Each OIDC actions role trusts `repo:antonycc/root.diyaccounting.co.uk:*` (and `repo:antonycc/submit.diyaccounting.co.uk:*` for backward compatibility).
+Each OIDC actions role trusts `repo:support-at-diyaccounting/root.diyaccounting.co.uk:*` (and `repo:support-at-diyaccounting/submit.diyaccounting.co.uk:*` for backward compatibility).
 
 ## Cross-Repo Coordination
 
@@ -109,7 +109,7 @@ spreadsheets repo ─OIDC──> spreadsheets (S3 + CloudFront)
 
 ## Bootstrapping a New Account
 
-Scripts in `scripts/aws-accounts/` automate the full onboarding flow. Static web projects (S3 + CloudFront) should use `antonycc/www.diyaccounting.co.uk` as a GitHub repository template.
+Scripts in `scripts/aws-accounts/` automate the full onboarding flow. Static web projects (S3 + CloudFront) should use `support-at-diyaccounting/www.diyaccounting.co.uk` as a GitHub repository template.
 
 ### Prerequisites
 
@@ -133,16 +133,16 @@ Scripts in `scripts/aws-accounts/` automate the full onboarding flow. Static web
   --account-id <NEW_ACCOUNT_ID> \
   --account-name gateway \
   --profile gateway \
-  --github-repo antonycc/www.diyaccounting.co.uk
+  --github-repo support-at-diyaccounting/www.diyaccounting.co.uk
 
 # Step 4: Create repo, set GitHub variables, update root trust policy
 ./scripts/aws-accounts/setup-github-repo.sh \
   --account-id <NEW_ACCOUNT_ID> \
   --account-name gateway \
-  --repo antonycc/www.diyaccounting.co.uk
+  --repo support-at-diyaccounting/www.diyaccounting.co.uk
 
 # Step 5: Clone, initialise, and deploy
-gh repo clone antonycc/www.diyaccounting.co.uk
+gh repo clone support-at-diyaccounting/www.diyaccounting.co.uk
 cd www.diyaccounting.co.uk
 # Update cdk.json, README.md, CLAUDE.md, workflow variable names
 npm install && ./mvnw clean verify && npm run cdk:synth
@@ -201,7 +201,7 @@ gh workflow run deploy.yml --ref main
 | Resource                  | Pattern                                  | Example                            |
 | ------------------------- | ---------------------------------------- | ---------------------------------- |
 | AWS Account name          | `<service>`                              | `gateway`                          |
-| Repository                | `antonycc/<service>.diyaccounting.co.uk` | `antonycc/www.diyaccounting.co.uk` |
+| Repository                | `support-at-diyaccounting/<service>.diyaccounting.co.uk` | `support-at-diyaccounting/www.diyaccounting.co.uk` |
 | OIDC actions role         | `<service>-github-actions-role`          | `gateway-github-actions-role`      |
 | Deployment role           | `<service>-deployment-role`              | `gateway-deployment-role`          |
 | CDK stack prefix          | `{env}-{service}-`                       | `prod-gateway-GatewayStack`        |
@@ -214,9 +214,9 @@ gh workflow run deploy.yml --ref main
 
 | Repository                                  | Purpose                                                |
 | ------------------------------------------- | ------------------------------------------------------ |
-| `antonycc/submit.diyaccounting.co.uk`       | Submit application (Lambda, Cognito, DynamoDB, API GW) |
-| `antonycc/www.diyaccounting.co.uk` (future) | Gateway static site                                    |
-| `antonycc/diy-accounting` (future)          | Spreadsheets static site                               |
+| `support-at-diyaccounting/submit.diyaccounting.co.uk`       | Submit application (Lambda, Cognito, DynamoDB, API GW) |
+| `support-at-diyaccounting/www.diyaccounting.co.uk` (future) | Gateway static site                                    |
+| `support-at-diyaccounting/spreadsheets.diyaccounting.co.uk` (future)          | Spreadsheets static site                               |
 
 ## AWS CLI Access
 

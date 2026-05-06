@@ -106,9 +106,9 @@ public class RootDnsStack extends Stack {
         super(scope, id, StackProps.builder().env(props.getEnv()).build());
 
         // Cost allocation tags
-        Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk/root-dns");
-        Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Owner", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Application", "@support-at-diyaccounting/submit.diyaccounting.co.uk/root-dns");
+        Tags.of(this).add("CostCenter", "@support-at-diyaccounting/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Owner", "@support-at-diyaccounting/submit.diyaccounting.co.uk");
         Tags.of(this).add("Stack", "RootDnsStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");
         Tags.of(this).add("BillingPurpose", "dns-management");

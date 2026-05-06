@@ -29,7 +29,7 @@ NC='\033[0m' # No Color
 ACCOUNT_ID=""
 ACCOUNT_NAME=""
 PROFILE=""
-GITHUB_REPO="antonycc/submit.diyaccounting.co.uk"
+GITHUB_REPO="support-at-diyaccounting/submit.diyaccounting.co.uk"
 OIDC_PROVIDER_URL="token.actions.githubusercontent.com"
 REGIONS=("us-east-1" "eu-west-2")
 
@@ -63,7 +63,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --profile <profile>     AWS CLI profile with AdministratorAccess to the account"
       echo ""
       echo "Options:"
-      echo "  --github-repo <repo>    GitHub repo for OIDC trust (default: antonycc/submit.diyaccounting.co.uk)"
+      echo "  --github-repo <repo>    GitHub repo for OIDC trust (default: support-at-diyaccounting/submit.diyaccounting.co.uk)"
       echo ""
       echo "What it does:"
       echo "  1. CDK bootstraps us-east-1 and eu-west-2"
