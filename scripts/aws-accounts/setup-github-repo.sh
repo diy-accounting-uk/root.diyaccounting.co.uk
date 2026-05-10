@@ -30,7 +30,7 @@ NC='\033[0m'
 ACCOUNT_ID=""
 ACCOUNT_NAME=""
 REPO=""
-TEMPLATE_REPO="support-at-diyaccounting/www.diyaccounting.co.uk"
+TEMPLATE_REPO="diy-accounting-uk/www.diyaccounting.co.uk"
 ROOT_PROFILE="management"
 ROOT_ACCOUNT_ID="887764105431"
 ROOT_HOSTED_ZONE_ID="Z0315522208PWZSSBI9AL"
@@ -71,10 +71,10 @@ while [[ $# -gt 0 ]]; do
       echo "Required:"
       echo "  --account-id <id>          AWS account ID (12 digits)"
       echo "  --account-name <name>      Account name for role naming (e.g., 'gateway')"
-      echo "  --repo <owner/repo>        GitHub repository (e.g., 'support-at-diyaccounting/www.diyaccounting.co.uk')"
+      echo "  --repo <owner/repo>        GitHub repository (e.g., 'diy-accounting-uk/www.diyaccounting.co.uk')"
       echo ""
       echo "Options:"
-      echo "  --template <owner/repo>    Template repository (default: support-at-diyaccounting/www.diyaccounting.co.uk)"
+      echo "  --template <owner/repo>    Template repository (default: diy-accounting-uk/www.diyaccounting.co.uk)"
       echo "  --root-profile <profile>   AWS CLI profile for root account (default: management)"
       echo "  --skip-create-repo         Skip repo creation (use if repo already exists)"
       echo ""
@@ -85,7 +85,7 @@ while [[ $# -gt 0 ]]; do
       echo "  4. Updates root-github-actions-role trust policy to trust the new repo"
       echo ""
       echo "Example:"
-      echo "  $0 --account-id 283165661847 --account-name gateway --repo support-at-diyaccounting/www.diyaccounting.co.uk"
+      echo "  $0 --account-id 283165661847 --account-name gateway --repo diy-accounting-uk/www.diyaccounting.co.uk"
       exit 0
       ;;
     *)
@@ -193,8 +193,8 @@ echo ""
 echo -e "${CYAN}Step 3: Create 'prod' GitHub Environment${NC}"
 
 # gh api to create environment (idempotent PUT)
-REPO_OWNER="${REPO%%/*}"
-REPO_NAME="${REPO##*/}"
+# REPO_OWNER="${REPO%%/*}"
+# REPO_NAME="${REPO##*/}"
 if gh api "repos/${REPO}/environments/prod" \
   --method PUT \
   --input /dev/null \
@@ -294,4 +294,4 @@ echo "       git push origin main"
 echo "       gh workflow run deploy.yml --ref main"
 echo ""
 echo "  5. Update root DNS (from root.diyaccounting.co.uk repo):"
-echo "       gh workflow run deploy.yml --ref main -R support-at-diyaccounting/root.diyaccounting.co.uk"
+echo "       gh workflow run deploy.yml --ref main -R diy-accounting-uk/root.diyaccounting.co.uk"

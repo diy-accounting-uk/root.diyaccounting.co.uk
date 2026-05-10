@@ -109,7 +109,7 @@ Both workflows use OIDC authentication with these GitHub repository variables:
 | `ROOT_ACCOUNT_ID`               | `887764105431`                                                    | Root account identifier            |
 | `ROOT_HOSTED_ZONE_ID`           | `Z0315522208PWZSSBI9AL`                                           | Route53 hosted zone ID             |
 
-Each OIDC actions role trusts both `repo:support-at-diyaccounting/root.diyaccounting.co.uk:*` and `repo:support-at-diyaccounting/submit.diyaccounting.co.uk:*`.
+Each OIDC actions role trusts both `repo:diy-accounting-uk/root.diyaccounting.co.uk:*` and `repo:diy-accounting-uk/submit.diyaccounting.co.uk:*`.
 
 **GitHub Environment**: The `deploy-root-dns` job uses `environment: prod`. This environment must exist in Settings > Environments.
 

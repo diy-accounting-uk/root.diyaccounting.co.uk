@@ -1,5 +1,5 @@
 {
-  "name": "@support-at-diyaccounting/root-diyaccounting-co-uk",
+  "name": "@diy-accounting-uk/root-diyaccounting-co-uk",
   "version": "1.0.0",
   "description": "Root account DNS and holding page management for diyaccounting.co.uk",
   "private": true,
@@ -21,10 +21,10 @@
     "diagram:root": "npm run cdk:synth && bash -c 'for f in cdk-submit-root.out/*.template.json; do npx @mhlabs/cfn-diagram draw.io -c -s -t \"$f\" -o \"cdk-root-$(basename $f .template.json).drawio\"; done' && for f in cdk-root-*.drawio; do node scripts/clean-drawio.cjs \"$f\"; done"
   },
   "devDependencies": {
-    "@mhlabs/cfn-diagram": "^1.1.40",
-    "aws-cdk": "^2.1106.1",
-    "npm-check-updates": "^19.4.1",
-    "prettier": "^3.8.1"
+    "@mhlabs/cfn-diagram": "^1.1.29",
+    "aws-cdk": "^2.1121.0",
+    "npm-check-updates": "^22.1.1",
+    "prettier": "^3.8.3"
   },
   "engines": {
     "node": ">=24.0.0"

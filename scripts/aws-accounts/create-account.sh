@@ -18,7 +18,7 @@ set -euo pipefail
 # --- Colors ---
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
+# YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
@@ -254,4 +254,4 @@ echo "  3. Set up the GitHub repository:"
 echo "       ./scripts/aws-accounts/setup-github-repo.sh \\"
 echo "         --account-id ${NEW_ACCOUNT_ID} \\"
 echo "         --account-name ${ACCOUNT_NAME} \\"
-echo "         --repo support-at-diyaccounting/${ACCOUNT_NAME}.diyaccounting.co.uk"
+echo "         --repo diy-accounting-uk/${ACCOUNT_NAME}.diyaccounting.co.uk"
