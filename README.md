@@ -198,22 +198,22 @@ gh workflow run deploy.yml --ref main
 
 ### Naming Conventions
 
-| Resource                  | Pattern                                                  | Example                                            |
-| ------------------------- | -------------------------------------------------------- | -------------------------------------------------- |
-| AWS Account name          | `<service>`                                              | `gateway`                                          |
+| Resource                  | Pattern                                           | Example                                     |
+| ------------------------- | ------------------------------------------------- | ------------------------------------------- |
+| AWS Account name          | `<service>`                                       | `gateway`                                   |
 | Repository                | `diy-accounting-uk/<service>.diyaccounting.co.uk` | `diy-accounting-uk/www.diyaccounting.co.uk` |
-| OIDC actions role         | `<service>-github-actions-role`                          | `gateway-github-actions-role`                      |
-| Deployment role           | `<service>-deployment-role`                              | `gateway-deployment-role`                          |
-| CDK stack prefix          | `{env}-{service}-`                                       | `prod-gateway-GatewayStack`                        |
-| CI domain                 | `ci-<service>.diyaccounting.co.uk`                       | `ci-gateway.diyaccounting.co.uk`                   |
-| Prod domain               | `prod-<service>.diyaccounting.co.uk`                     | `prod-gateway.diyaccounting.co.uk`                 |
-| GitHub variable (actions) | `<SERVICE>_ACTIONS_ROLE_ARN`                             | `GATEWAY_ACTIONS_ROLE_ARN`                         |
-| GitHub variable (deploy)  | `<SERVICE>_DEPLOY_ROLE_ARN`                              | `GATEWAY_DEPLOY_ROLE_ARN`                          |
+| OIDC actions role         | `<service>-github-actions-role`                   | `gateway-github-actions-role`               |
+| Deployment role           | `<service>-deployment-role`                       | `gateway-deployment-role`                   |
+| CDK stack prefix          | `{env}-{service}-`                                | `prod-gateway-GatewayStack`                 |
+| CI domain                 | `ci-<service>.diyaccounting.co.uk`                | `ci-gateway.diyaccounting.co.uk`            |
+| Prod domain               | `prod-<service>.diyaccounting.co.uk`              | `prod-gateway.diyaccounting.co.uk`          |
+| GitHub variable (actions) | `<SERVICE>_ACTIONS_ROLE_ARN`                      | `GATEWAY_ACTIONS_ROLE_ARN`                  |
+| GitHub variable (deploy)  | `<SERVICE>_DEPLOY_ROLE_ARN`                       | `GATEWAY_DEPLOY_ROLE_ARN`                   |
 
 ## Related Repositories
 
-| Repository                                                           | Purpose                                                |
-| -------------------------------------------------------------------- | ------------------------------------------------------ |
+| Repository                                                    | Purpose                                                |
+| ------------------------------------------------------------- | ------------------------------------------------------ |
 | `diy-accounting-uk/submit.diyaccounting.co.uk`                | Submit application (Lambda, Cognito, DynamoDB, API GW) |
 | `diy-accounting-uk/www.diyaccounting.co.uk` (future)          | Gateway static site                                    |
 | `diy-accounting-uk/spreadsheets.diyaccounting.co.uk` (future) | Spreadsheets static site                               |
