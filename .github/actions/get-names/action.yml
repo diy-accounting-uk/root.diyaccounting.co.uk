@@ -105,7 +105,11 @@ runs:
         DIY_SUBMIT_APEX_DOMAIN="${ENVIRONMENT_NAME?}-submit.diyaccounting.co.uk"
         DIY_SUBMIT_APEX_URL="https://${DIY_SUBMIT_APEX_DOMAIN?}/"
 
-        DIY_SUBMIT_HOLDING_DOMAIN="${ENVIRONMENT_NAME?}-holding.diyaccounting.co.uk"
+        if [ "${ENVIRONMENT_NAME?}" = "prod" ]; then
+          DIY_SUBMIT_HOLDING_DOMAIN="holding.diyaccounting.co.uk"
+        else
+          DIY_SUBMIT_HOLDING_DOMAIN="${ENVIRONMENT_NAME?}-holding.diyaccounting.co.uk"
+        fi
         DIY_SUBMIT_HOLDING_URL="https://${DIY_SUBMIT_HOLDING_DOMAIN?}/"
 
         # Public domain: the canonical user-facing domain (matches publicDomainName in SubmitSharedNames.java)
