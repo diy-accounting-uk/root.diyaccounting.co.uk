@@ -89,7 +89,7 @@ public class ApexStack extends Stack {
         @Override
         @Value.Default
         default Boolean getCrossRegionReferences() {
-            return null;
+            return Boolean.FALSE;
         }
 
         @Override
