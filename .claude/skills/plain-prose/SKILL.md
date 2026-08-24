@@ -46,24 +46,24 @@ The foundation. Apply these before worrying about anything else.
 
 Common substitutions (Plain English Campaign's A-to-Z, the ones that recur here):
 
-| instead of | write |
-| --- | --- |
-| additional | extra |
-| commence / initiate | start |
-| ensure | make sure |
-| in excess of | more than |
-| prior to | before |
-| subsequent to | after |
-| terminate | end |
-| utilise | use |
-| in order to | to |
-| approximately | about |
-| demonstrate | show |
-| sufficient | enough |
-| require | need |
-| regarding / with regard to | about |
-| whilst | while |
-| in the event that | if |
+| instead of                 | write     |
+| -------------------------- | --------- |
+| additional                 | extra     |
+| commence / initiate        | start     |
+| ensure                     | make sure |
+| in excess of               | more than |
+| prior to                   | before    |
+| subsequent to              | after     |
+| terminate                  | end       |
+| utilise                    | use       |
+| in order to                | to        |
+| approximately              | about     |
+| demonstrate                | show      |
+| sufficient                 | enough    |
+| require                    | need      |
+| regarding / with regard to | about     |
+| whilst                     | while     |
+| in the event that          | if        |
 
 ---
 

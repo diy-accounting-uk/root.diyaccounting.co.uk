@@ -14,7 +14,7 @@ shape (DONE-or-OPEN only, nothing deferred; a bug found fixing item A is A's rem
 item; `NEXT.md` holds only what to do next — completed work lives in `git log`). Plans of record
 are `PLAN_*.md` files at this repo's root.
 
-> **Invoke it by telling a session:** *"Follow the `do-next` skill"*, or "work the open items in
+> **Invoke it by telling a session:** _"Follow the `do-next` skill"_, or "work the open items in
 > NEXT.md", or "do NEXT".
 
 ## When to run this
@@ -57,7 +57,7 @@ are `PLAN_*.md` files at this repo's root.
      lives here (see this repo's `CLAUDE.md`).
    - The exact file-ownership list — what it owns, what it must not touch and why.
    - **Testing**: `./mvnw clean verify` for any Java change under `cdk-root/`, `npm run
-     formatting` before a final commit, and `npm run lint:workflows` for any `.github/workflows/`
+formatting` before a final commit, and `npm run lint:workflows` for any `.github/workflows/`
      edit. There is no application test suite in this repo — CDK synth output is the check.
    - **Git discipline**: confirm repo-local identity, commit early and often with clean messages,
      never `git stash`/`reset --hard`/`checkout --`/`clean`, never push, never merge to `main`,
@@ -83,7 +83,7 @@ are `PLAN_*.md` files at this repo's root.
    **A failing check a track reports is an open item and a job for this batch**, whether or not
    the track caused it.
 9. **Before a push to `main`, run `./mvnw clean verify`, `npm run formatting`, `npm run
-   lint:workflows`, and `npm run cdk:synth`** — the one moment the full check set is mandatory,
+lint:workflows`, and `npm run cdk:synth`** — the one moment the full check set is mandatory,
    regardless of how narrow every track's own testing was. A CDK synth failure or a drifted
    OIDC-role/environment variable (see this repo's `CLAUDE.md` deployment table) blocks the push
    until resolved.
