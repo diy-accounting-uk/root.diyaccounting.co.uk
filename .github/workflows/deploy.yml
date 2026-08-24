@@ -341,6 +341,51 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Refuse to deploy while a failover is live
+        shell: bash
+        run: |
+          set -euo pipefail
+          # RootDnsStack owns the A/AAAA records for every live name, and ApexStack sets each
+          # holding distribution's aliases to just its own holding domain. Deploying either while
+          # deploy-holding.yml has a failover in place silently undoes it: the records swing back to
+          # the live distributions and the live aliases are stripped off the holding distribution.
+          # A holding distribution carrying any alias but its own is the signal that this happened.
+          FAILED_OVER=""
+          for HOLDING_DOMAIN in ci-holding.diyaccounting.co.uk holding.diyaccounting.co.uk; do
+            DISTRIBUTION_ARN=$(aws resourcegroupstaggingapi get-resources \
+              --resource-type-filters cloudfront:distribution \
+              --region us-east-1 \
+              --tag-filters Key=OriginFor,Values="${HOLDING_DOMAIN}" \
+              --query 'ResourceTagMappingList[0].ResourceARN' \
+              --output text)
+            if [ -z "$DISTRIBUTION_ARN" ] || [ "$DISTRIBUTION_ARN" = "None" ]; then
+              echo "No distribution tagged OriginFor=${HOLDING_DOMAIN} yet; nothing to check."
+              continue
+            fi
+            DISTRIBUTION_ID="${DISTRIBUTION_ARN##*/}"
+            CLAIMED=$(aws cloudfront get-distribution \
+              --id "${DISTRIBUTION_ID}" \
+              --query 'Distribution.DistributionConfig.Aliases.Items' \
+              --output json | jq -r --arg holding "${HOLDING_DOMAIN}" \
+                '[ (. // [])[] | select(. != $holding) ] | join(", ")')
+            if [ -n "$CLAIMED" ]; then
+              echo "::error::${HOLDING_DOMAIN} (${DISTRIBUTION_ID}) is serving live domains: ${CLAIMED}"
+              FAILED_OVER="yes"
+            else
+              echo "${HOLDING_DOMAIN} (${DISTRIBUTION_ID}) serves only itself; not failed over."
+            fi
+          done
+          if [ -n "$FAILED_OVER" ]; then
+            echo "" >&2
+            echo "A holding failover is currently live. Deploying now would take the site down:" >&2
+            echo "  - RootDnsStack would repoint the records at the live distributions" >&2
+            echo "  - ApexStack would strip the live aliases off the holding distribution" >&2
+            echo "" >&2
+            echo "Run deploy-holding.yml with target: restore for that environment first," >&2
+            echo "confirm the live aliases are back on the gateway distribution, then re-run." >&2
+            exit 1
+          fi
+
       - name: Deploy RootDnsStack (CDK)
         run: |
           echo "Deploying stack: root-RootDnsStack"
