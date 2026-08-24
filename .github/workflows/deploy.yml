@@ -149,7 +149,7 @@ jobs:
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   deploy-root-dns:
-    name: "deploy root DNS records"
+    name: "deploy root DNS records and apex holding stacks"
     needs:
       - params
       - names
@@ -377,7 +377,35 @@ jobs:
           SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.spreadsheets-cloudfront-domain }}
           ROUTE53_DELEGATE_ACCOUNTS: "367191799875,972912397388"
 
+      - name: Deploy ci-root-ApexStack (CDK)
+        run: |
+          echo "Deploying stack: ci-root-ApexStack"
+          cd cdk-root \
+            && npx cdk deploy \
+              ci-root-ApexStack \
+              --require-approval never \
+              --ci true \
+              --no-notices \
+              --outputs-file ../cdk-submit-root.out/cdk-outputs-ci-apex.json \
+          ;
+
+      - name: Deploy prod-root-ApexStack (CDK)
+        run: |
+          echo "Deploying stack: prod-root-ApexStack"
+          cd cdk-root \
+            && npx cdk deploy \
+              prod-root-ApexStack \
+              --require-approval never \
+              --ci true \
+              --no-notices \
+              --outputs-file ../cdk-submit-root.out/cdk-outputs-prod-apex.json \
+          ;
+
       - name: Show stack outputs
         run: |
           echo "=== Root DNS Stack Outputs ==="
           cat cdk-submit-root.out/cdk-outputs-root-dns.json | jq '.'
+          echo "=== CI Apex Stack Outputs ==="
+          cat cdk-submit-root.out/cdk-outputs-ci-apex.json | jq '.'
+          echo "=== Prod Apex Stack Outputs ==="
+          cat cdk-submit-root.out/cdk-outputs-prod-apex.json | jq '.'

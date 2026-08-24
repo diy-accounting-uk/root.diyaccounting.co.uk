@@ -30,7 +30,8 @@ This repository manages the **root AWS account** (887764105431) for diyaccountin
 
 - **Route53 hosted zone** for `diyaccounting.co.uk` (all DNS records)
 - **RootDnsStack**: Alias records pointing to gateway/spreadsheets CloudFront distributions
-- **Holding page**: Maintenance page at `{env}-holding.diyaccounting.co.uk`
+- **ApexStack** (ci + prod): Maintenance page at `ci-holding.diyaccounting.co.uk` /
+  `holding.diyaccounting.co.uk`, CloudFront distribution tagged `OriginFor=<holding domain>`
 - **Cross-account delegation role**: `root-route53-record-delegate` for submit accounts
 
 **What this repo does NOT have**: Lambda, DynamoDB, Cognito, API Gateway, Docker, ngrok, HMRC, Stripe, or any application code.
@@ -74,7 +75,8 @@ npm run diagram:root           # Generate draw.io architecture diagram from CDK 
 **Single CDK application** (`cdk-root/`):
 
 - Entry point: `RootEnvironment.java` -> `submit-root.jar`
-- Stack: `root-RootDnsStack` (Route53 alias records + delegation role)
+- Stacks: `root-RootDnsStack` (Route53 alias records + delegation role), `ci-root-ApexStack` and
+  `prod-root-ApexStack` (apex holding page CloudFront distributions)
 
 **Java packages** (`co.uk.diyaccounting.root`):
 
@@ -101,8 +103,12 @@ Deployments are triggered via GitHub Actions workflows:
 | Workflow             | Purpose                                        | Trigger              |
 | -------------------- | ---------------------------------------------- | -------------------- |
 | `test.yml`           | Lint, format check, Maven verify, CDK synth    | Push, daily schedule |
-| `deploy.yml`         | Deploy RootDnsStack (DNS records)              | Manual dispatch      |
+| `deploy.yml`         | Deploy RootDnsStack + apex ApexStacks          | Manual dispatch      |
 | `deploy-holding.yml` | Switch apex to holding page or last-known-good | Manual dispatch      |
+
+`deploy-holding.yml` finds its target CloudFront distribution in the management account by the
+`OriginFor` tag that `ApexStack` sets on it (`ci-holding.diyaccounting.co.uk` or
+`holding.diyaccounting.co.uk`), via `resourcegroupstaggingapi`.
 
 Both workflows use OIDC authentication with these GitHub repository variables:
 

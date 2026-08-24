@@ -22,13 +22,14 @@ The management account (887764105431) retains only: AWS Organizations, IAM Ident
 | Submit       | `ci-submit.diyaccounting.co.uk`       | `prod-submit.diyaccounting.co.uk`       | `submit.diyaccounting.co.uk`                     |
 | Gateway      | `ci-gateway.diyaccounting.co.uk`      | `prod-gateway.diyaccounting.co.uk`      | `diyaccounting.co.uk`, `www.diyaccounting.co.uk` |
 | Spreadsheets | `ci-spreadsheets.diyaccounting.co.uk` | `prod-spreadsheets.diyaccounting.co.uk` | `spreadsheets.diyaccounting.co.uk`               |
-| Holding      | `ci-holding.diyaccounting.co.uk`      | `prod-holding.diyaccounting.co.uk`      |                                                  |
+| Holding      | `ci-holding.diyaccounting.co.uk`      | `holding.diyaccounting.co.uk`           |                                                  |
 
 ## What This Repo Manages
 
 - **Route53 hosted zone** for `diyaccounting.co.uk` (all DNS records)
 - **RootDnsStack**: Alias A/AAAA records pointing to gateway/spreadsheets CloudFront distributions
-- **Holding page**: Maintenance page at `{env}-holding.diyaccounting.co.uk`
+- **ApexStack**: `ci-root-ApexStack` / `prod-root-ApexStack` — CloudFront + S3 holding page at
+  `ci-holding.diyaccounting.co.uk` / `holding.diyaccounting.co.uk`, tagged `OriginFor=<holding domain>`
 - **Cross-account delegation role**: `root-route53-record-delegate` for submit accounts to create DNS records
 
 **What this repo does NOT have**: Lambda, DynamoDB, Cognito, API Gateway, Docker, ngrok, HMRC, Stripe, or any application code.
@@ -59,7 +60,8 @@ npm run diagram:root             # Generate draw.io architecture diagram from CD
 **Single CDK application** (`cdk-root/`):
 
 - Entry point: `RootEnvironment.java` -> `submit-root.jar`
-- Stack: `root-RootDnsStack` (Route53 alias records + delegation role)
+- Stacks: `root-RootDnsStack` (Route53 alias records + delegation role), `ci-root-ApexStack` and
+  `prod-root-ApexStack` (apex holding page CloudFront distributions)
 
 **Java packages** (`co.uk.diyaccounting.root`):
 
@@ -74,7 +76,7 @@ Deployments are triggered via GitHub Actions workflows:
 | Workflow             | Purpose                                        | Trigger              |
 | -------------------- | ---------------------------------------------- | -------------------- |
 | `test.yml`           | Lint, format check, Maven verify, CDK synth    | Push, daily schedule |
-| `deploy.yml`         | Deploy RootDnsStack (DNS records)              | Manual dispatch      |
+| `deploy.yml`         | Deploy RootDnsStack + apex ApexStacks          | Manual dispatch      |
 | `deploy-holding.yml` | Switch apex to holding page or last-known-good | Manual dispatch      |
 
 Both workflows use OIDC authentication with GitHub repository variables.

@@ -25,6 +25,7 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
+import software.amazon.awscdk.services.certificatemanager.CertificateValidation;
 import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CfnDistribution;
@@ -88,7 +89,7 @@ public class ApexStack extends Stack {
         @Override
         @Value.Default
         default Boolean getCrossRegionReferences() {
-            return null;
+            return Boolean.FALSE;
         }
 
         @Override
@@ -109,8 +110,6 @@ public class ApexStack extends Stack {
         String hostedZoneName();
 
         String hostedZoneId();
-
-        String certificateArn();
 
         String holdingDocRootPath();
 
@@ -140,18 +139,17 @@ public class ApexStack extends Stack {
                         .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
                         .build());
 
-        // Apply cost allocation tags for all resources in this stack
+        // Apply cost allocation tags for all resources in this stack (matches RootDnsStack)
         Tags.of(this).add("Environment", props.envName());
-        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk/cdk.json");
+        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk/root-dns");
         Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
         Tags.of(this).add("Owner", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Project", "@diy-accounting-uk/submit.diyaccounting.co.uk");
         Tags.of(this).add("DeploymentName", props.deploymentName());
-        Tags.of(this).add("Stack", "EdgeStack");
+        Tags.of(this).add("Stack", "ApexStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");
 
         // Enhanced cost optimization tags
-        Tags.of(this).add("BillingPurpose", "authentication-infrastructure");
+        Tags.of(this).add("BillingPurpose", "apex-holding-page");
         Tags.of(this).add("ResourceType", "serverless-web-app");
         Tags.of(this).add("Criticality", "low");
         Tags.of(this).add("DataClassification", "public");
@@ -177,9 +175,11 @@ public class ApexStack extends Stack {
                                                 - (props.hostedZoneName().length() + 1))
                         : props.sharedNames().holdingDomainName);
 
-        // TLS certificate from existing ACM (must be in us-east-1 for CloudFront)
-        var cert =
-                Certificate.fromCertificateArn(this, props.resourceNamePrefix() + "-WebCert", props.certificateArn());
+        // Self-issued, DNS-validated TLS certificate (must be in us-east-1 for CloudFront)
+        var cert = Certificate.Builder.create(this, props.resourceNamePrefix() + "-WebCert")
+                .domainName(props.sharedNames().holdingDomainName)
+                .validation(CertificateValidation.fromDns(zone))
+                .build();
 
         // Create the origin bucket — no explicit bucketName so each account gets a unique name
         // (S3 bucket names are globally unique; hardcoding causes collisions during account migration)

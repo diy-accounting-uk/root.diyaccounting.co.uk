@@ -198,7 +198,7 @@ KEEP_NAMES = {
     f"spreadsheets.{ZONE}.",
     # Holding
     f"ci-holding.{ZONE}.",
-    f"prod-holding.{ZONE}.",
+    f"holding.{ZONE}.",
     # Simulator
     f"ci-simulator.{ZONE}.",
     f"prod-simulator.{ZONE}.",
