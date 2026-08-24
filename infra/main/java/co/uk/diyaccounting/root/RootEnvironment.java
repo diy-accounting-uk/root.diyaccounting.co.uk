@@ -8,6 +8,7 @@ package co.uk.diyaccounting.root;
 import static co.uk.diyaccounting.root.utils.Kind.envOr;
 import static co.uk.diyaccounting.root.utils.Kind.infof;
 
+import co.uk.diyaccounting.root.stacks.ApexStack;
 import co.uk.diyaccounting.root.stacks.RootDnsStack;
 import co.uk.diyaccounting.root.utils.KindCdk;
 import java.util.Arrays;
@@ -18,13 +19,16 @@ import software.amazon.awscdk.Environment;
 /**
  * CDK entry point for the root account DNS management.
  * Deploys RootDnsStack which manages Route53 alias records
- * for gateway and spreadsheets CloudFront distributions.
+ * for gateway and spreadsheets CloudFront distributions, and
+ * ApexStack (ci + prod) which serves the apex holding pages.
  * <p>
- * Deployed by deploy-root.yml (manual dispatch only).
+ * Deployed by deploy.yml (manual dispatch only).
  */
 public class RootEnvironment {
 
     public final RootDnsStack rootDnsStack;
+    public final ApexStack ciApexStack;
+    public final ApexStack prodApexStack;
 
     public static void main(final String[] args) {
         App app = new App();
@@ -111,5 +115,58 @@ public class RootEnvironment {
                         .spreadsheetsCloudFrontDomain(spreadsheetsCfDomain)
                         .route53DelegateAccountIds(route53DelegateAccountIds)
                         .build());
+
+        // Apex holding pages: one distribution per environment, both in the management account.
+        String ciApexStackId = "ci-root-ApexStack";
+        infof("Synthesizing stack %s", ciApexStackId);
+        this.ciApexStack = new ApexStack(
+                app,
+                ciApexStackId,
+                ApexStack.ApexStackProps.builder()
+                        .env(usEast1Env)
+                        .envName("ci")
+                        .deploymentName("ci")
+                        .resourceNamePrefix("ci-root")
+                        .cloudTrailEnabled("false")
+                        .sharedNames(buildHoldingSharedNames("ci", hostedZoneName, usEast1Env.getAccount()))
+                        .hostedZoneName(hostedZoneName)
+                        .hostedZoneId(hostedZoneId)
+                        .holdingDocRootPath("../web/holding")
+                        .accessLogGroupRetentionPeriodDays(90)
+                        .build());
+
+        String prodApexStackId = "prod-root-ApexStack";
+        infof("Synthesizing stack %s", prodApexStackId);
+        this.prodApexStack = new ApexStack(
+                app,
+                prodApexStackId,
+                ApexStack.ApexStackProps.builder()
+                        .env(usEast1Env)
+                        .envName("prod")
+                        .deploymentName("prod")
+                        .resourceNamePrefix("prod-root")
+                        .cloudTrailEnabled("false")
+                        .sharedNames(buildHoldingSharedNames("prod", hostedZoneName, usEast1Env.getAccount()))
+                        .hostedZoneName(hostedZoneName)
+                        .hostedZoneId(hostedZoneId)
+                        .holdingDocRootPath("../web/holding")
+                        .accessLogGroupRetentionPeriodDays(90)
+                        .build());
+    }
+
+    /**
+     * Builds the shared-names bundle ApexStack needs, scoped to the apex holding domain
+     * for the given environment. subDomainName is "holding" so the derived domain fields
+     * (envDomainName/publicDomainName) line up with the actual holding domain name.
+     */
+    private static SubmitSharedNames buildHoldingSharedNames(String envName, String hostedZoneName, String account) {
+        var props = new SubmitSharedNames.SubmitSharedNamesProps();
+        props.hostedZoneName = hostedZoneName;
+        props.envName = envName;
+        props.subDomainName = "holding";
+        props.deploymentName = envName;
+        props.regionName = "us-east-1";
+        props.awsAccount = account;
+        return new SubmitSharedNames(props);
     }
 }
