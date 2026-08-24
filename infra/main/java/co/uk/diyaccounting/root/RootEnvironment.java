@@ -132,6 +132,7 @@ public class RootEnvironment {
                         .hostedZoneName(hostedZoneName)
                         .hostedZoneId(hostedZoneId)
                         .holdingDocRootPath("../web/holding")
+                        .liveDomainNames(apexFailoverDomainNames("ci", hostedZoneName))
                         .accessLogGroupRetentionPeriodDays(90)
                         .build());
 
@@ -150,8 +151,20 @@ public class RootEnvironment {
                         .hostedZoneName(hostedZoneName)
                         .hostedZoneId(hostedZoneId)
                         .holdingDocRootPath("../web/holding")
+                        .liveDomainNames(apexFailoverDomainNames("prod", hostedZoneName))
                         .accessLogGroupRetentionPeriodDays(90)
                         .build());
+    }
+
+    /**
+     * The live domains the apex holding distribution serves during a failover. deploy-holding.yml
+     * moves exactly these aliases onto the holding distribution, and CloudFront refuses an alias the
+     * distribution's certificate does not cover, so ApexStack also issues its certificate over them.
+     */
+    private static List<String> apexFailoverDomainNames(String envName, String hostedZoneName) {
+        return "prod".equals(envName)
+                ? List.of(hostedZoneName, "www." + hostedZoneName, "prod-gateway." + hostedZoneName)
+                : List.of(envName + "-gateway." + hostedZoneName);
     }
 
     /**
