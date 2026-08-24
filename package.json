@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@mhlabs/cfn-diagram": "^1.1.29",
-    "aws-cdk": "^2.1121.0",
+    "aws-cdk": "^2.1138.0",
     "npm-check-updates": "^22.1.1",
     "prettier": "^3.8.3"
   },
