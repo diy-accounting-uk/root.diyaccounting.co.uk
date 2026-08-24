@@ -173,7 +173,7 @@ public class RootDnsStack extends Stack {
         }
 
         // Cross-account IAM role for Route53 record management
-        // Allows submit stacks in other accounts to create DNS records in this hosted zone
+        // Allows service stacks in other accounts to create DNS records in this hosted zone
         if (!props.route53DelegateAccountIds().isEmpty()) {
             var principals = props.route53DelegateAccountIds().stream()
                     .map(AccountPrincipal::new)
@@ -181,7 +181,7 @@ public class RootDnsStack extends Stack {
             var delegateRole = Role.Builder.create(this, "Route53DelegateRole")
                     .roleName("root-route53-record-delegate")
                     .assumedBy(new CompositePrincipal(principals))
-                    .description("Allows submit accounts to create Route53 records in the root hosted zone")
+                    .description("Allows service accounts to create Route53 records in the root hosted zone")
                     .build();
             delegateRole.addToPolicy(PolicyStatement.Builder.create()
                     .actions(List.of("route53:ChangeResourceRecordSets", "route53:GetHostedZone"))

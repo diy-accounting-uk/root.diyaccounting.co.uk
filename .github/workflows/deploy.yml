@@ -375,7 +375,7 @@ jobs:
           APEX_CLOUDFRONT_DOMAIN: ${{ steps.lookup-gateway.outputs.apex-cloudfront-domain }}
           WWW_CLOUDFRONT_DOMAIN: ${{ steps.lookup-gateway.outputs.www-cloudfront-domain }}
           SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.spreadsheets-cloudfront-domain }}
-          ROUTE53_DELEGATE_ACCOUNTS: "367191799875,972912397388"
+          ROUTE53_DELEGATE_ACCOUNTS: "367191799875,972912397388,283165661847,064390746177"
 
       - name: Deploy ci-root-ApexStack (CDK)
         run: |
