@@ -32,7 +32,10 @@ This repository manages the **root AWS account** (887764105431) for diyaccountin
 - **RootDnsStack**: Alias records pointing to gateway/spreadsheets CloudFront distributions
 - **ApexStack** (ci + prod): Maintenance page at `ci-holding.diyaccounting.co.uk` /
   `holding.diyaccounting.co.uk`, CloudFront distribution tagged `OriginFor=<holding domain>`
-- **Cross-account delegation role**: `root-route53-record-delegate` for submit accounts
+- **Cross-account delegation role**: `root-route53-record-delegate`, trusted by the submit, gateway
+  and spreadsheets accounts via `sts:AssumeRole` from their own deployment roles, so no GitHub OIDC
+  trust reaches this account. It grants records in the hosted zone only — enough for both alias
+  upserts and ACM certificate-validation CNAMEs.
 
 **What this repo does NOT have**: Lambda, DynamoDB, Cognito, API Gateway, Docker, ngrok, HMRC, Stripe, or any application code.
 
@@ -100,15 +103,26 @@ npm run diagram:root           # Generate draw.io architecture diagram from CDK 
 
 Deployments are triggered via GitHub Actions workflows:
 
-| Workflow             | Purpose                                        | Trigger              |
-| -------------------- | ---------------------------------------------- | -------------------- |
-| `test.yml`           | Lint, format check, Maven verify, CDK synth    | Push, daily schedule |
-| `deploy.yml`         | Deploy RootDnsStack + apex ApexStacks          | Manual dispatch      |
-| `deploy-holding.yml` | Switch apex to holding page or last-known-good | Manual dispatch      |
+| Workflow             | Purpose                                                            | Trigger              |
+| -------------------- | ------------------------------------------------------------------ | -------------------- |
+| `test.yml`           | Lint, format check, Maven verify, CDK synth                        | Push, daily schedule |
+| `deploy.yml`         | Deploy RootDnsStack + apex ApexStacks                              | Manual dispatch      |
+| `deploy-holding.yml` | Fail the gateway domains over to the holding page, or restore them | Manual dispatch      |
 
-`deploy-holding.yml` finds its target CloudFront distribution in the management account by the
-`OriginFor` tag that `ApexStack` sets on it (`ci-holding.diyaccounting.co.uk` or
-`holding.diyaccounting.co.uk`), via `resourcegroupstaggingapi`.
+`deploy-holding.yml` moves the live gateway aliases between two accounts. It strips them from
+`{env}-gateway-GatewayStack`'s distribution in the gateway account, then adds them to the holding
+distribution in the management account, which it finds by the `OriginFor` tag `ApexStack` sets
+(`ci-holding.diyaccounting.co.uk` or `holding.diyaccounting.co.uk`) via `resourcegroupstaggingapi`.
+Finally it repoints the A/AAAA records in the hosted zone. `target: restore` runs the same moves in
+reverse. The domains it moves are `ci-gateway.diyaccounting.co.uk` for ci, and
+`diyaccounting.co.uk`, `www.diyaccounting.co.uk` and `prod-gateway.diyaccounting.co.uk` for prod —
+the same list `ApexStack` issues its certificate over, because CloudFront rejects an alias the
+certificate does not cover.
+
+`deploy.yml` refuses to run while a failover is live. It checks each holding distribution's aliases
+first and fails if one is serving a live domain, because `RootDnsStack` would repoint the records at
+the live distributions and `ApexStack` would strip the live aliases back off the holding
+distribution. Run `deploy-holding.yml` with `target: restore` first.
 
 Both workflows use OIDC authentication with these GitHub repository variables:
 

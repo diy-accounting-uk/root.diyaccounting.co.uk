@@ -37,6 +37,8 @@ import software.constructs.Construct;
  * - diyaccounting.co.uk (apex) → prod gateway CloudFront
  * - www.diyaccounting.co.uk → prod gateway CloudFront
  * - spreadsheets.diyaccounting.co.uk → prod spreadsheets CloudFront
+ * - ci-holding.spreadsheets.diyaccounting.co.uk → CI spreadsheets holding CloudFront
+ * - holding.spreadsheets.diyaccounting.co.uk → prod spreadsheets holding CloudFront
  */
 public class RootDnsStack extends Stack {
 
@@ -91,9 +93,21 @@ public class RootDnsStack extends Stack {
             return "";
         }
 
-        /** Account IDs to trust for cross-account Route53 record management. Empty list to skip role creation. */
+        /** CloudFront domain name for ci-holding.spreadsheets.diyaccounting.co.uk. Empty to skip. */
         @Value.Default
-        default List<String> route53DelegateAccountIds() {
+        default String ciSpreadsheetsHoldingCloudFrontDomain() {
+            return "";
+        }
+
+        /** CloudFront domain name for holding.spreadsheets.diyaccounting.co.uk. Empty to skip. */
+        @Value.Default
+        default String prodSpreadsheetsHoldingCloudFrontDomain() {
+            return "";
+        }
+
+        /** Service account IDs the cross-account delegate role trusts. Empty list to skip role creation. */
+        @Value.Default
+        default List<String> delegateAccountIds() {
             return List.of();
         }
 
@@ -152,6 +166,30 @@ public class RootDnsStack extends Stack {
             cfnOutput(this, "ProdSpreadsheetsDomain", "prod-spreadsheets." + props.hostedZoneName());
         }
 
+        // Spreadsheets holding pages; the distributions live in the spreadsheets account,
+        // which creates no Route53 records of its own.
+        if (!props.ciSpreadsheetsHoldingCloudFrontDomain().isBlank()) {
+            infof("Creating ci-holding.spreadsheets alias to %s", props.ciSpreadsheetsHoldingCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this,
+                    "CiSpreadsheetsHolding",
+                    zone,
+                    "ci-holding.spreadsheets",
+                    props.ciSpreadsheetsHoldingCloudFrontDomain());
+            cfnOutput(this, "CiSpreadsheetsHoldingDomain", "ci-holding.spreadsheets." + props.hostedZoneName());
+        }
+
+        if (!props.prodSpreadsheetsHoldingCloudFrontDomain().isBlank()) {
+            infof("Creating holding.spreadsheets alias to %s", props.prodSpreadsheetsHoldingCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this,
+                    "ProdSpreadsheetsHolding",
+                    zone,
+                    "holding.spreadsheets",
+                    props.prodSpreadsheetsHoldingCloudFrontDomain());
+            cfnOutput(this, "ProdSpreadsheetsHoldingDomain", "holding.spreadsheets." + props.hostedZoneName());
+        }
+
         // Phase 2: Production domain DNS records (go-live switchover)
         if (!props.apexCloudFrontDomain().isBlank()) {
             infof("Creating apex alias to %s", props.apexCloudFrontDomain());
@@ -172,25 +210,23 @@ public class RootDnsStack extends Stack {
             cfnOutput(this, "SpreadsheetsDomain", "spreadsheets." + props.hostedZoneName());
         }
 
-        // Cross-account IAM role for Route53 record management
-        // Allows submit stacks in other accounts to create DNS records in this hosted zone
-        if (!props.route53DelegateAccountIds().isEmpty()) {
-            var principals = props.route53DelegateAccountIds().stream()
+        // Cross-account IAM role for Route53 record management, reached by sts:AssumeRole from each
+        // service account's own deployment role, so no GitHub OIDC trust into this account is needed.
+        if (!props.delegateAccountIds().isEmpty()) {
+            var principals = props.delegateAccountIds().stream()
                     .map(AccountPrincipal::new)
                     .toArray(IPrincipal[]::new);
             var delegateRole = Role.Builder.create(this, "Route53DelegateRole")
                     .roleName("root-route53-record-delegate")
                     .assumedBy(new CompositePrincipal(principals))
-                    .description("Allows submit accounts to create Route53 records in the root hosted zone")
+                    .description("Allows service accounts to create Route53 records in the root hosted zone")
                     .build();
             delegateRole.addToPolicy(PolicyStatement.Builder.create()
                     .actions(List.of("route53:ChangeResourceRecordSets", "route53:GetHostedZone"))
                     .resources(List.of("arn:aws:route53:::hostedzone/" + props.hostedZoneId()))
                     .build());
             cfnOutput(this, "Route53DelegateRoleArn", delegateRole.getRoleArn());
-            infof(
-                    "Created Route53 delegate role for accounts: %s",
-                    String.join(", ", props.route53DelegateAccountIds()));
+            infof("Created Route53 delegate role for accounts: %s", String.join(", ", props.delegateAccountIds()));
         }
 
         infof("RootDnsStack %s created", this.getNode().getId());

@@ -113,6 +113,13 @@ public class ApexStack extends Stack {
 
         String holdingDocRootPath();
 
+        /**
+         * Live domains this holding distribution takes over during a failover. They are added to the
+         * distribution's aliases by deploy-holding.yml, and CloudFront rejects an alias the certificate
+         * does not cover, so they are also the certificate's subject alternative names.
+         */
+        List<String> liveDomainNames();
+
         /** Logging TTL in days */
         int accessLogGroupRetentionPeriodDays();
 
@@ -178,6 +185,7 @@ public class ApexStack extends Stack {
         // Self-issued, DNS-validated TLS certificate (must be in us-east-1 for CloudFront)
         var cert = Certificate.Builder.create(this, props.resourceNamePrefix() + "-WebCert")
                 .domainName(props.sharedNames().holdingDomainName)
+                .subjectAlternativeNames(props.liveDomainNames())
                 .validation(CertificateValidation.fromDns(zone))
                 .build();
 

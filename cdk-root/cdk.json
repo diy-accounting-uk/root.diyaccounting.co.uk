@@ -12,6 +12,8 @@
     "prodSpreadsheetsCloudFrontDomain": "",
     "apexCloudFrontDomain": "",
     "wwwCloudFrontDomain": "",
-    "spreadsheetsCloudFrontDomain": ""
+    "spreadsheetsCloudFrontDomain": "",
+    "ciSpreadsheetsHoldingCloudFrontDomain": "",
+    "prodSpreadsheetsHoldingCloudFrontDomain": ""
   }
 }

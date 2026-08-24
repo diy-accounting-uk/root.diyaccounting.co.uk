@@ -52,9 +52,15 @@ public class RootEnvironment {
         var spreadsheetsCfDomain = envOr(
                 "SPREADSHEETS_CLOUDFRONT_DOMAIN",
                 KindCdk.getContextValueString(app, "spreadsheetsCloudFrontDomain", ""));
+        var ciSpreadsheetsHoldingCfDomain = envOr(
+                "CI_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN",
+                KindCdk.getContextValueString(app, "ciSpreadsheetsHoldingCloudFrontDomain", ""));
+        var prodSpreadsheetsHoldingCfDomain = envOr(
+                "PROD_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN",
+                KindCdk.getContextValueString(app, "prodSpreadsheetsHoldingCloudFrontDomain", ""));
 
-        // Comma-separated list of account IDs to trust for cross-account Route53 delegation
-        var delegateAccountsCsv = envOr("ROUTE53_DELEGATE_ACCOUNTS", "");
+        // Comma-separated list of service account IDs the cross-account delegate roles trust
+        var delegateAccountsCsv = envOr("DELEGATE_ACCOUNTS", "");
         List<String> delegateAccountIds = delegateAccountsCsv.isBlank()
                 ? List.of()
                 : Arrays.stream(delegateAccountsCsv.split(","))
@@ -73,6 +79,8 @@ public class RootEnvironment {
                 apexCfDomain,
                 wwwCfDomain,
                 spreadsheetsCfDomain,
+                ciSpreadsheetsHoldingCfDomain,
+                prodSpreadsheetsHoldingCfDomain,
                 delegateAccountIds);
         app.synth();
         infof("CDK synth complete for root DNS environment");
@@ -89,7 +97,9 @@ public class RootEnvironment {
             String apexCfDomain,
             String wwwCfDomain,
             String spreadsheetsCfDomain,
-            List<String> route53DelegateAccountIds) {
+            String ciSpreadsheetsHoldingCfDomain,
+            String prodSpreadsheetsHoldingCfDomain,
+            List<String> delegateAccountIds) {
         // Root account DNS management runs in us-east-1 (Route53 is global but CDK needs a region)
         Environment usEast1Env = Environment.builder()
                 .region("us-east-1")
@@ -113,7 +123,9 @@ public class RootEnvironment {
                         .apexCloudFrontDomain(apexCfDomain)
                         .wwwCloudFrontDomain(wwwCfDomain)
                         .spreadsheetsCloudFrontDomain(spreadsheetsCfDomain)
-                        .route53DelegateAccountIds(route53DelegateAccountIds)
+                        .ciSpreadsheetsHoldingCloudFrontDomain(ciSpreadsheetsHoldingCfDomain)
+                        .prodSpreadsheetsHoldingCloudFrontDomain(prodSpreadsheetsHoldingCfDomain)
+                        .delegateAccountIds(delegateAccountIds)
                         .build());
 
         // Apex holding pages: one distribution per environment, both in the management account.
@@ -132,6 +144,7 @@ public class RootEnvironment {
                         .hostedZoneName(hostedZoneName)
                         .hostedZoneId(hostedZoneId)
                         .holdingDocRootPath("../web/holding")
+                        .liveDomainNames(apexFailoverDomainNames("ci", hostedZoneName))
                         .accessLogGroupRetentionPeriodDays(90)
                         .build());
 
@@ -150,8 +163,20 @@ public class RootEnvironment {
                         .hostedZoneName(hostedZoneName)
                         .hostedZoneId(hostedZoneId)
                         .holdingDocRootPath("../web/holding")
+                        .liveDomainNames(apexFailoverDomainNames("prod", hostedZoneName))
                         .accessLogGroupRetentionPeriodDays(90)
                         .build());
+    }
+
+    /**
+     * The live domains the apex holding distribution serves during a failover. deploy-holding.yml
+     * moves exactly these aliases onto the holding distribution, and CloudFront refuses an alias the
+     * distribution's certificate does not cover, so ApexStack also issues its certificate over them.
+     */
+    private static List<String> apexFailoverDomainNames(String envName, String hostedZoneName) {
+        return "prod".equals(envName)
+                ? List.of(hostedZoneName, "www." + hostedZoneName, "prod-gateway." + hostedZoneName)
+                : List.of(envName + "-gateway." + hostedZoneName);
     }
 
     /**
