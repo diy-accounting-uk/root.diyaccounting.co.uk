@@ -134,7 +134,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Compute deployment name and environment
         id: deployment-config
         uses: ./.github/actions/get-names
@@ -159,7 +159,7 @@ jobs:
       # === Build tools (no AWS credentials needed) ===
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node
         uses: actions/setup-node@v6
