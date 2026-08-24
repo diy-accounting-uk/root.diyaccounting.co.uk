@@ -125,34 +125,10 @@ jobs:
       www-auto: ${{ steps.normalise.outputs.www-auto }}
       ss-auto: ${{ steps.normalise.outputs.ss-auto }}
 
-  names:
-    needs:
-      - params
-    runs-on: ubuntu-24.04
-    environment: ${{ needs.params.outputs.github-environment }}
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Compute deployment name and environment
-        id: deployment-config
-        uses: ./.github/actions/get-names
-    outputs:
-      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
-      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
-      base-domain: ${{ steps.deployment-config.outputs.base-domain }}
-      base-url: ${{ steps.deployment-config.outputs.base-url }}
-      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
-      apex-url: ${{ steps.deployment-config.outputs.apex-url }}
-      holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
-      holding-url: ${{ steps.deployment-config.outputs.holding-url }}
-
   deploy-root-dns:
     name: "deploy root DNS records and apex holding stacks"
     needs:
       - params
-      - names
     runs-on: ubuntu-24.04
     environment: prod
     steps:

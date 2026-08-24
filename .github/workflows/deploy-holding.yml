@@ -8,11 +8,11 @@ on:
     inputs:
       target:
         type: choice
-        description: "Where to point the apex domain"
+        description: "Where to point the apex and gateway domains"
         required: true
         options:
           - "holding"
-          - "last-known-good"
+          - "restore"
         default: "holding"
       environment-name:
         type: choice
@@ -29,17 +29,16 @@ permissions:
   contents: read
 
 env:
-  AWS_REGION: "eu-west-2"
+  AWS_REGION: "us-east-1"
 
 jobs:
   params:
     runs-on: ubuntu-24.04
+    permissions: {}
     steps:
       - name: "github.event_name=[${{ github.event_name }}]"
         run: ":"
       - name: "github.ref=[${{ github.ref }}]"
-        run: ":"
-      - name: "github.sha=[${{ github.sha }}]"
         run: ":"
       - name: "inputs.target=[${{ inputs.target }}]"
         run: ":"
@@ -48,53 +47,64 @@ jobs:
       - name: Normalise Params
         id: normalise
         shell: bash
+        env:
+          INPUT_TARGET: ${{ inputs.target }}
+          INPUT_ENVIRONMENT_NAME: ${{ inputs.environment-name }}
         run: |
-          X='${{ inputs.target }}' ; echo "target=${X:-holding}" | tee -a "$GITHUB_OUTPUT"
-          # Convert '(auto)' to empty string for downstream processing
-          ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
-          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
-          # Resolve GitHub Actions environment from explicit input or branch
-          GH_ENV="${ENV_NAME}"
-          if [ -z "$GH_ENV" ]; then
-            if [ "${{ github.ref }}" == "refs/heads/main" ]; then GH_ENV="prod"; else GH_ENV="ci"; fi
+          set -euo pipefail
+          TARGET="${INPUT_TARGET:-holding}"
+
+          ENV_NAME="${INPUT_ENVIRONMENT_NAME}"
+          if [ "$ENV_NAME" = "(auto)" ] || [ -z "$ENV_NAME" ]; then
+            if [ "$GITHUB_REF" = "refs/heads/main" ]; then ENV_NAME="prod"; else ENV_NAME="ci"; fi
           fi
-          echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
+
+          # These live domains must stay equal to the holding certificate's subject alternative
+          # names, which RootEnvironment.apexFailoverDomainNames builds. CloudFront rejects an
+          # alias the distribution's certificate does not cover.
+          if [ "$ENV_NAME" = "prod" ]; then
+            HOLDING_DOMAIN="holding.diyaccounting.co.uk"
+            LIVE_DOMAINS="diyaccounting.co.uk www.diyaccounting.co.uk prod-gateway.diyaccounting.co.uk"
+          else
+            HOLDING_DOMAIN="${ENV_NAME}-holding.diyaccounting.co.uk"
+            LIVE_DOMAINS="${ENV_NAME}-gateway.diyaccounting.co.uk"
+          fi
+
+          echo "target=${TARGET}" | tee -a "$GITHUB_OUTPUT"
+          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
+          echo "holding-domain=${HOLDING_DOMAIN}" | tee -a "$GITHUB_OUTPUT"
+          echo "live-domains=${LIVE_DOMAINS}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       target: ${{ steps.normalise.outputs.target }}
       environment-name: ${{ steps.normalise.outputs.environment-name }}
-      github-environment: ${{ steps.normalise.outputs.github-environment }}
+      holding-domain: ${{ steps.normalise.outputs.holding-domain }}
+      live-domains: ${{ steps.normalise.outputs.live-domains }}
 
-  names:
-    needs: [params]
+  move-aliases:
+    name: "point the gateway domains at ${{ needs.params.outputs.target }}"
+    needs:
+      - params
     runs-on: ubuntu-24.04
-    environment: ${{ needs.params.outputs.github-environment }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Compute names
-        id: deployment-config
-        uses: ./.github/actions/get-names
-        with:
-          environment-name: ${{ needs.params.outputs.environment-name || '' }}
-    outputs:
-      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
-      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
-      holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
-      prod-apex-alias: ${{ steps.deployment-config.outputs.prod-apex-alias }}
-
-  resolve-target:
-    name: "resolve target deployment"
-    needs: [params, names]
-    runs-on: ubuntu-24.04
-    environment: ${{ needs.names.outputs.environment-name }}
+    environment: ${{ needs.params.outputs.environment-name }}
     permissions:
       id-token: write
       contents: read
+    env:
+      TARGET: ${{ needs.params.outputs.target }}
+      ENVIRONMENT_NAME: ${{ needs.params.outputs.environment-name }}
+      HOLDING_DOMAIN: ${{ needs.params.outputs.holding-domain }}
+      LIVE_DOMAINS: ${{ needs.params.outputs.live-domains }}
+      HOSTED_ZONE_ID: ${{ vars.ROOT_HOSTED_ZONE_ID }}
     steps:
-      - name: Configure AWS role via GitHub OIDC
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # === Gateway account: the live distribution ===
+
+      - name: Configure gateway account (OIDC)
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.GATEWAY_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -102,10 +112,10 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Assume AWS deployment role
+      - name: Assume gateway deployment role
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.GATEWAY_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -113,86 +123,41 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Resolve origin domain and distribution
-        id: resolve
-        env:
-          TARGET: ${{ needs.params.outputs.target }}
-          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          HOLDING_DOMAIN: ${{ needs.names.outputs.holding-domain }}
+      - name: Resolve the live gateway distribution
+        id: gateway
+        shell: bash
         run: |
           set -euo pipefail
-
-          if [ "$TARGET" = "holding" ]; then
-            ORIGIN_DOMAIN="${HOLDING_DOMAIN}"
-            echo "Target: holding page at ${ORIGIN_DOMAIN}"
-          else
-            # Look up last-known-good deployment from SSM
-            PARAMETER_NAME="/submit/${ENVIRONMENT_NAME}/last-known-good-deployment"
-            LKG_DEPLOYMENT=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
-            if [ -z "$LKG_DEPLOYMENT" ] || [ "$LKG_DEPLOYMENT" = "None" ]; then
-              echo "ERROR: No last-known-good deployment found in SSM at ${PARAMETER_NAME}"
-              exit 1
-            fi
-            ORIGIN_DOMAIN="${LKG_DEPLOYMENT}.submit.diyaccounting.co.uk"
-            echo "Target: last-known-good deployment [${LKG_DEPLOYMENT}] at ${ORIGIN_DOMAIN}"
-          fi
-
-          # Look up CloudFront distribution by OriginFor tag
-          echo "Looking up CloudFront distribution with OriginFor=${ORIGIN_DOMAIN}"
-          CLOUDFRONT_DISTRIBUTION_ARN=$(aws resourcegroupstaggingapi get-resources \
-            --resource-type-filters cloudfront:distribution \
-            --region us-east-1 \
-            --tag-filters Key=OriginFor,Values="${ORIGIN_DOMAIN}" \
-            --query 'ResourceTagMappingList[0].ResourceARN' \
+          STACK_NAME="${ENVIRONMENT_NAME}-gateway-GatewayStack"
+          DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
+            --stack-name "${STACK_NAME}" \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
             --output text)
-
-          if [ -z "$CLOUDFRONT_DISTRIBUTION_ARN" ] || [ "$CLOUDFRONT_DISTRIBUTION_ARN" = "None" ]; then
-            echo "ERROR: No CloudFront distribution found with tag OriginFor=${ORIGIN_DOMAIN}" >&2
+          DISTRIBUTION_DOMAIN=$(aws cloudformation describe-stacks \
+            --stack-name "${STACK_NAME}" \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+            --output text)
+          if [ -z "$DISTRIBUTION_ID" ] || [ "$DISTRIBUTION_ID" = "None" ]; then
+            echo "ERROR: no DistributionId output on stack ${STACK_NAME}" >&2
             exit 1
           fi
-          CLOUDFRONT_DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ARN##*/}"
-          echo "Found CloudFront Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID}"
-
-          # Look up API Gateway ID if targeting a deployment (not holding)
-          API_GATEWAY_ID=""
-          if [ "$TARGET" != "holding" ]; then
-            STACK_NAME="${LKG_DEPLOYMENT}-app-ApiStack"
-            echo "Looking up API Gateway ID from stack ${STACK_NAME}"
-            API_GATEWAY_ID=$(aws cloudformation describe-stacks \
-              --stack-name "${STACK_NAME}" \
-              --region eu-west-2 \
-              --query "Stacks[0].Outputs[?OutputKey=='HttpApiId'].OutputValue | [0]" \
-              --output text 2>/dev/null || echo "")
-            if [ -z "$API_GATEWAY_ID" ] || [ "$API_GATEWAY_ID" = "None" ]; then
-              echo "WARNING: Could not find API Gateway ID from stack ${STACK_NAME}, API GW custom domains will not be updated"
-              API_GATEWAY_ID=""
-            else
-              echo "Found API Gateway ID: ${API_GATEWAY_ID}"
-            fi
+          if [ -z "$DISTRIBUTION_DOMAIN" ] || [ "$DISTRIBUTION_DOMAIN" = "None" ]; then
+            echo "ERROR: no DistributionDomainName output on stack ${STACK_NAME}" >&2
+            exit 1
           fi
+          echo "distribution-id=${DISTRIBUTION_ID}" | tee -a "$GITHUB_OUTPUT"
+          echo "distribution-domain=${DISTRIBUTION_DOMAIN}" | tee -a "$GITHUB_OUTPUT"
 
-          echo "ORIGIN_DOMAIN=${ORIGIN_DOMAIN}" | tee -a "$GITHUB_OUTPUT"
-          echo "CLOUDFRONT_DISTRIBUTION_ID=${CLOUDFRONT_DISTRIBUTION_ID}" | tee -a "$GITHUB_OUTPUT"
-          echo "API_GATEWAY_ID=${API_GATEWAY_ID}" | tee -a "$GITHUB_OUTPUT"
+      - name: Release the live aliases from the gateway distribution
+        if: ${{ needs.params.outputs.target == 'holding' }}
         shell: bash
-    outputs:
-      origin-domain: ${{ steps.resolve.outputs.ORIGIN_DOMAIN }}
-      cloudfront-distribution-id: ${{ steps.resolve.outputs.CLOUDFRONT_DISTRIBUTION_ID }}
-      api-gateway-id: ${{ steps.resolve.outputs.API_GATEWAY_ID }}
+        run: ./scripts/cloudfront-aliases.sh remove "$GATEWAY_DISTRIBUTION_ID" $LIVE_DOMAINS
+        env:
+          GATEWAY_DISTRIBUTION_ID: ${{ steps.gateway.outputs.distribution-id }}
 
-  set-origins:
-    name: "set origins to ${{ needs.params.outputs.target }}"
-    needs: [params, names, resolve-target]
-    runs-on: ubuntu-24.04
-    environment: ${{ needs.names.outputs.environment-name }}
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      # === Management account: the holding distribution and the hosted zone ===
 
-      - name: Configure AWS role via GitHub OIDC
+      - name: Configure root account (OIDC)
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
@@ -203,7 +168,7 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Assume AWS deployment role
+      - name: Assume root deployment role
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
@@ -214,27 +179,149 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Set origins
-        uses: "./.github/actions/set-origins"
+      - name: Resolve the holding distribution
+        id: holding
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Looking up the CloudFront distribution tagged OriginFor=${HOLDING_DOMAIN}"
+          DISTRIBUTION_ARN=$(aws resourcegroupstaggingapi get-resources \
+            --resource-type-filters cloudfront:distribution \
+            --region us-east-1 \
+            --tag-filters Key=OriginFor,Values="${HOLDING_DOMAIN}" \
+            --query 'ResourceTagMappingList[0].ResourceARN' \
+            --output text)
+          if [ -z "$DISTRIBUTION_ARN" ] || [ "$DISTRIBUTION_ARN" = "None" ]; then
+            echo "ERROR: no CloudFront distribution tagged OriginFor=${HOLDING_DOMAIN}" >&2
+            exit 1
+          fi
+          echo "distribution-id=${DISTRIBUTION_ARN##*/}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Claim the live aliases for the holding distribution
+        if: ${{ needs.params.outputs.target == 'holding' }}
+        shell: bash
+        run: ./scripts/cloudfront-aliases.sh add "$HOLDING_DISTRIBUTION_ID" $LIVE_DOMAINS
+        env:
+          HOLDING_DISTRIBUTION_ID: ${{ steps.holding.outputs.distribution-id }}
+
+      - name: Release the live aliases from the holding distribution
+        if: ${{ needs.params.outputs.target == 'restore' }}
+        shell: bash
+        run: ./scripts/cloudfront-aliases.sh remove "$HOLDING_DISTRIBUTION_ID" $LIVE_DOMAINS
+        env:
+          HOLDING_DISTRIBUTION_ID: ${{ steps.holding.outputs.distribution-id }}
+
+      # === Gateway account again: hand the aliases back ===
+
+      - name: Configure gateway account for the handback (OIDC)
+        if: ${{ needs.params.outputs.target == 'restore' }}
+        uses: aws-actions/configure-aws-credentials@v6
         with:
-          origin-domain: ${{ needs.resolve-target.outputs.origin-domain }}
-          apex-domain: ${{ needs.names.outputs.apex-domain }}
-          prod-apex-alias: ${{ needs.names.outputs.prod-apex-alias }}
-          aws-account-id: ${{ vars.ROOT_ACCOUNT_ID }}
-          hosted-zone-id: ${{ vars.ROOT_HOSTED_ZONE_ID }}
-          cloudfront-distribution-id: ${{ needs.resolve-target.outputs.cloudfront-distribution-id }}
-          api-gateway-id: ${{ needs.resolve-target.outputs.api-gateway-id }}
-          regional-certificate-arn: ${{ needs.resolve-target.outputs.api-gateway-id != '' && vars.SUBMIT_REGIONAL_CERTIFICATE_ARN || '' }}
+          role-to-assume: ${{ vars.GATEWAY_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume gateway deployment role for the handback
+        if: ${{ needs.params.outputs.target == 'restore' }}
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.GATEWAY_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Return the live aliases to the gateway distribution
+        if: ${{ needs.params.outputs.target == 'restore' }}
+        shell: bash
+        run: ./scripts/cloudfront-aliases.sh add "$GATEWAY_DISTRIBUTION_ID" $LIVE_DOMAINS
+        env:
+          GATEWAY_DISTRIBUTION_ID: ${{ steps.gateway.outputs.distribution-id }}
+
+      # === Management account again: repoint the records ===
+
+      - name: Configure root account for Route53 (OIDC)
+        if: ${{ needs.params.outputs.target == 'restore' }}
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume root deployment role for Route53
+        if: ${{ needs.params.outputs.target == 'restore' }}
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Point the live domains at the chosen distribution
+        shell: bash
+        env:
+          GATEWAY_DISTRIBUTION_DOMAIN: ${{ steps.gateway.outputs.distribution-domain }}
+        run: |
+          set -euo pipefail
+          if [ "$TARGET" = "holding" ]; then
+            # Aliasing to another record in the same zone uses that zone's own id.
+            ALIAS_TARGET="${HOLDING_DOMAIN}"
+            ALIAS_ZONE_ID="${HOSTED_ZONE_ID}"
+          else
+            # Aliasing straight to a distribution uses CloudFront's fixed alias zone id.
+            ALIAS_TARGET="${GATEWAY_DISTRIBUTION_DOMAIN}"
+            ALIAS_ZONE_ID="Z2FDTNDATAQYW2"
+          fi
+
+          CHANGES=$(printf '%s\n' $LIVE_DOMAINS | jq -R . | jq -s \
+            --arg target "$ALIAS_TARGET" --arg zone "$ALIAS_ZONE_ID" '
+              [ .[] as $name | ["A", "AAAA"][] as $type | {
+                  Action: "UPSERT",
+                  ResourceRecordSet: {
+                    Name: ($name + "."),
+                    Type: $type,
+                    AliasTarget: {
+                      HostedZoneId: $zone,
+                      DNSName: ($target + "."),
+                      EvaluateTargetHealth: false
+                    }
+                  }
+                } ]')
+
+          echo "Upserting ${LIVE_DOMAINS} to alias ${ALIAS_TARGET} in zone ${HOSTED_ZONE_ID}"
+          aws route53 change-resource-record-sets \
+            --hosted-zone-id "${HOSTED_ZONE_ID}" \
+            --change-batch "$(jq -n --argjson changes "$CHANGES" \
+              '{Comment: "Point the live gateway domains at the failover target", Changes: $changes}')"
 
       - name: Summary
+        shell: bash
+        env:
+          GATEWAY_DISTRIBUTION_ID: ${{ steps.gateway.outputs.distribution-id }}
+          HOLDING_DISTRIBUTION_ID: ${{ steps.holding.outputs.distribution-id }}
         run: |
-          echo "## Deploy Holding Result" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Target | \`${{ needs.params.outputs.target }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Environment | \`${{ needs.names.outputs.environment-name }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Apex domain | \`${{ needs.names.outputs.apex-domain }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Origin domain | \`${{ needs.resolve-target.outputs.origin-domain }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| CloudFront | \`${{ needs.resolve-target.outputs.cloudfront-distribution-id }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| API Gateway | \`${{ needs.resolve-target.outputs.api-gateway-id || 'N/A' }}\` |" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Deploy holding result"
+            echo ""
+            echo "| Setting | Value |"
+            echo "|---------|-------|"
+            echo "| Target | \`${TARGET}\` |"
+            echo "| Environment | \`${ENVIRONMENT_NAME}\` |"
+            echo "| Live domains | \`${LIVE_DOMAINS}\` |"
+            echo "| Holding domain | \`${HOLDING_DOMAIN}\` |"
+            echo "| Gateway distribution | \`${GATEWAY_DISTRIBUTION_ID}\` |"
+            echo "| Holding distribution | \`${HOLDING_DISTRIBUTION_ID}\` |"
+          } >>"$GITHUB_STEP_SUMMARY"

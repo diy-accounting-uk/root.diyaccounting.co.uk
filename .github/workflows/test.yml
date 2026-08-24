@@ -13,7 +13,6 @@ on:
       - "package.json"
       - "package-lock.json"
       - "pom.xml"
-      - ".github/actions/get-names"
       - ".github/workflows/*.yml"
       - ".prettierignore"
       - ".prettierrc"

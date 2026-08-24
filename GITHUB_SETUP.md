@@ -32,19 +32,18 @@ These were created by `submit.diyaccounting.co.uk/scripts/aws-accounts/bootstrap
 
 Repo-level. The values below are per-account ARNs and IDs that the deploy workflows use to assume cross-account roles for Route53 alias updates and CloudFront lookups.
 
-| Variable                          | How to obtain                                                                                                                                                                                                     |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ROOT_ACCOUNT_ID`                 | `887764105431`                                                                                                                                                                                                    |
-| `ROOT_HOSTED_ZONE_ID`             | `aws --profile management route53 list-hosted-zones-by-name --dns-name diyaccounting.co.uk --query 'HostedZones[0].Id' --output text` (strip `/hostedzone/`)                                                      |
-| `ROOT_ACTIONS_ROLE_ARN`           | `aws --profile management iam get-role --role-name root-github-actions-role --query Role.Arn --output text`                                                                                                       |
-| `ROOT_DEPLOY_ROLE_ARN`            | `aws --profile management iam get-role --role-name root-deployment-role --query Role.Arn --output text`                                                                                                           |
-| `GATEWAY_ACTIONS_ROLE_ARN`        | `aws --profile gateway iam get-role --role-name gateway-github-actions-role --query Role.Arn --output text`                                                                                                       |
-| `GATEWAY_DEPLOY_ROLE_ARN`         | `aws --profile gateway iam get-role --role-name gateway-deployment-role --query Role.Arn --output text`                                                                                                           |
-| `SPREADSHEETS_ACTIONS_ROLE_ARN`   | `aws --profile spreadsheets iam get-role --role-name spreadsheets-github-actions-role --query Role.Arn --output text`                                                                                             |
-| `SPREADSHEETS_DEPLOY_ROLE_ARN`    | `aws --profile spreadsheets iam get-role --role-name spreadsheets-deployment-role --query Role.Arn --output text`                                                                                                 |
-| `SUBMIT_REGIONAL_CERTIFICATE_ARN` | `aws --profile submit-prod acm list-certificates --region eu-west-2 --query "CertificateSummaryList[?DomainName=='*.submit.diyaccounting.co.uk'].CertificateArn" --output text` (used by deploy-holding workflow) |
+| Variable                        | How to obtain                                                                                                                                                |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ROOT_ACCOUNT_ID`               | `887764105431`                                                                                                                                               |
+| `ROOT_HOSTED_ZONE_ID`           | `aws --profile management route53 list-hosted-zones-by-name --dns-name diyaccounting.co.uk --query 'HostedZones[0].Id' --output text` (strip `/hostedzone/`) |
+| `ROOT_ACTIONS_ROLE_ARN`         | `aws --profile management iam get-role --role-name root-github-actions-role --query Role.Arn --output text`                                                  |
+| `ROOT_DEPLOY_ROLE_ARN`          | `aws --profile management iam get-role --role-name root-deployment-role --query Role.Arn --output text`                                                      |
+| `GATEWAY_ACTIONS_ROLE_ARN`      | `aws --profile gateway iam get-role --role-name gateway-github-actions-role --query Role.Arn --output text`                                                  |
+| `GATEWAY_DEPLOY_ROLE_ARN`       | `aws --profile gateway iam get-role --role-name gateway-deployment-role --query Role.Arn --output text`                                                      |
+| `SPREADSHEETS_ACTIONS_ROLE_ARN` | `aws --profile spreadsheets iam get-role --role-name spreadsheets-github-actions-role --query Role.Arn --output text`                                        |
+| `SPREADSHEETS_DEPLOY_ROLE_ARN`  | `aws --profile spreadsheets iam get-role --role-name spreadsheets-deployment-role --query Role.Arn --output text`                                            |
 
-Cross-account variables (`GATEWAY_*`, `SPREADSHEETS_*`, `SUBMIT_*`) are set on this repo because the deploy workflow does cross-account NS-record updates from the management account.
+Cross-account variables (`GATEWAY_*`, `SPREADSHEETS_*`) are set on this repo because the deploy workflows read CloudFront domains, move CloudFront aliases and update Route53 records across accounts from the management account.
 
 ## GitHub Actions Secrets
 
@@ -52,18 +51,18 @@ None required.
 
 ## Workflows
 
-| File                 | Trigger                                                  | Notes                                                                                                                                                                                  |
-| -------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test.yml`           | push (paths-filtered), workflow_dispatch, daily schedule | Lint + Maven verify + CDK synth                                                                                                                                                        |
-| `deploy.yml`         | workflow_dispatch                                        | Deploy `RootDnsStack` (Route53 records + cross-account roles) and the `ci-root-ApexStack` / `prod-root-ApexStack` apex holding page distributions                                      |
-| `deploy-holding.yml` | workflow_dispatch                                        | Switch the apex CloudFront alias to a holding page or back to last-known-good. Looks up the holding distribution in the management account by its `OriginFor` tag, set by `ApexStack`. |
+| File                 | Trigger                                                  | Notes                                                                                                                                                                                                                                                  |
+| -------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `test.yml`           | push (paths-filtered), workflow_dispatch, daily schedule | Lint + Maven verify + CDK synth                                                                                                                                                                                                                        |
+| `deploy.yml`         | workflow_dispatch                                        | Deploy `RootDnsStack` (Route53 records + cross-account roles) and the `ci-root-ApexStack` / `prod-root-ApexStack` apex holding page distributions                                                                                                      |
+| `deploy-holding.yml` | workflow_dispatch                                        | Move the live gateway aliases to the apex holding distribution, or restore them. Strips the aliases in the gateway account, then claims them on the holding distribution the management account exposes under its `OriginFor` tag, set by `ApexStack`. |
 
 ## Sequence to bring a new repo online
 
 1. Create the repo on GitHub. Push code.
 2. Update OIDC trust on `root-github-actions-role` to include `repo:<new-org>/root.diyaccounting.co.uk:*` (via the AWS console or `aws iam update-assume-role-policy`).
 3. Create the `prod` GitHub Environment.
-4. Set the repo-level variables listed above. Cross-account variables require SSO into each profile (`gateway`, `spreadsheets`, `submit-prod`).
+4. Set the repo-level variables listed above. Cross-account variables require SSO into each profile (`gateway`, `spreadsheets`).
 5. Push a trivial commit on a feature branch — `test.yml` should pass (proves OIDC for management).
 6. `gh workflow run deploy.yml` to apply the `RootDnsStack` (DNS + cross-account delegation roles).
 7. Verify https://diyaccounting.co.uk resolves and Route53 records are intact.
