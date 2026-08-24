@@ -32,8 +32,11 @@ This repository manages the **root AWS account** (887764105431) for diyaccountin
 - **RootDnsStack**: Alias records pointing to gateway/spreadsheets CloudFront distributions
 - **ApexStack** (ci + prod): Maintenance page at `ci-holding.diyaccounting.co.uk` /
   `holding.diyaccounting.co.uk`, CloudFront distribution tagged `OriginFor=<holding domain>`
-- **Cross-account delegation role**: `root-route53-record-delegate` for the submit, gateway and
-  spreadsheets accounts
+- **Cross-account delegation roles**, both trusting the submit, gateway and spreadsheets accounts by
+  `sts:AssumeRole` from their own deployment roles, so no GitHub OIDC trust reaches this account:
+  - `root-route53-record-delegate` — write records in the hosted zone
+  - `root-holding-failover-delegate` — the same records, plus read and update this account's
+    CloudFront distributions, so a service repo can move its live alias onto a holding distribution
 
 **What this repo does NOT have**: Lambda, DynamoDB, Cognito, API Gateway, Docker, ngrok, HMRC, Stripe, or any application code.
 

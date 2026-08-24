@@ -353,7 +353,7 @@ jobs:
           echo "Spreadsheets domain: $SPREADSHEETS_CLOUDFRONT_DOMAIN"
           echo "CI spreadsheets holding domain: $CI_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN"
           echo "Prod spreadsheets holding domain: $PROD_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN"
-          echo "Route53 delegate accounts: $ROUTE53_DELEGATE_ACCOUNTS"
+          echo "Delegate accounts: $DELEGATE_ACCOUNTS"
           cd cdk-root \
             && npx cdk deploy \
               root-RootDnsStack \
@@ -372,7 +372,7 @@ jobs:
           SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.spreadsheets-cloudfront-domain }}
           CI_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.ci-spreadsheets-holding-cloudfront-domain }}
           PROD_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.prod-spreadsheets-holding-cloudfront-domain }}
-          ROUTE53_DELEGATE_ACCOUNTS: "367191799875,972912397388,283165661847,064390746177"
+          DELEGATE_ACCOUNTS: "367191799875,972912397388,283165661847,064390746177"
 
       - name: Deploy ci-root-ApexStack (CDK)
         run: |

@@ -59,8 +59,8 @@ public class RootEnvironment {
                 "PROD_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN",
                 KindCdk.getContextValueString(app, "prodSpreadsheetsHoldingCloudFrontDomain", ""));
 
-        // Comma-separated list of account IDs to trust for cross-account Route53 delegation
-        var delegateAccountsCsv = envOr("ROUTE53_DELEGATE_ACCOUNTS", "");
+        // Comma-separated list of service account IDs the cross-account delegate roles trust
+        var delegateAccountsCsv = envOr("DELEGATE_ACCOUNTS", "");
         List<String> delegateAccountIds = delegateAccountsCsv.isBlank()
                 ? List.of()
                 : Arrays.stream(delegateAccountsCsv.split(","))
@@ -99,7 +99,7 @@ public class RootEnvironment {
             String spreadsheetsCfDomain,
             String ciSpreadsheetsHoldingCfDomain,
             String prodSpreadsheetsHoldingCfDomain,
-            List<String> route53DelegateAccountIds) {
+            List<String> delegateAccountIds) {
         // Root account DNS management runs in us-east-1 (Route53 is global but CDK needs a region)
         Environment usEast1Env = Environment.builder()
                 .region("us-east-1")
@@ -125,7 +125,7 @@ public class RootEnvironment {
                         .spreadsheetsCloudFrontDomain(spreadsheetsCfDomain)
                         .ciSpreadsheetsHoldingCloudFrontDomain(ciSpreadsheetsHoldingCfDomain)
                         .prodSpreadsheetsHoldingCloudFrontDomain(prodSpreadsheetsHoldingCfDomain)
-                        .route53DelegateAccountIds(route53DelegateAccountIds)
+                        .delegateAccountIds(delegateAccountIds)
                         .build());
 
         // Apex holding pages: one distribution per environment, both in the management account.

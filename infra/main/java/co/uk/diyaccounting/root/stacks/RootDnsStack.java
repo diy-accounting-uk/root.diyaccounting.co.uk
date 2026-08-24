@@ -105,15 +105,19 @@ public class RootDnsStack extends Stack {
             return "";
         }
 
-        /** Account IDs to trust for cross-account Route53 record management. Empty list to skip role creation. */
+        /** Service account IDs the cross-account delegate roles trust. Empty list to skip role creation. */
         @Value.Default
-        default List<String> route53DelegateAccountIds() {
+        default List<String> delegateAccountIds() {
             return List.of();
         }
 
         static ImmutableRootDnsStackProps.Builder builder() {
             return ImmutableRootDnsStackProps.builder();
         }
+    }
+
+    private static IPrincipal[] accountPrincipals(final List<String> accountIds) {
+        return accountIds.stream().map(AccountPrincipal::new).toArray(IPrincipal[]::new);
     }
 
     public RootDnsStack(final Construct scope, final String id, final RootDnsStackProps props) {
@@ -210,25 +214,50 @@ public class RootDnsStack extends Stack {
             cfnOutput(this, "SpreadsheetsDomain", "spreadsheets." + props.hostedZoneName());
         }
 
-        // Cross-account IAM role for Route53 record management
-        // Allows service stacks in other accounts to create DNS records in this hosted zone
-        if (!props.route53DelegateAccountIds().isEmpty()) {
-            var principals = props.route53DelegateAccountIds().stream()
-                    .map(AccountPrincipal::new)
-                    .toArray(IPrincipal[]::new);
-            var delegateRole = Role.Builder.create(this, "Route53DelegateRole")
+        // Cross-account IAM roles the service accounts reach by sts:AssumeRole from their own
+        // deployment roles, so no GitHub OIDC trust into the management account is needed.
+        if (!props.delegateAccountIds().isEmpty()) {
+            var hostedZoneArn = "arn:aws:route53:::hostedzone/" + props.hostedZoneId();
+
+            var recordDelegateRole = Role.Builder.create(this, "Route53DelegateRole")
                     .roleName("root-route53-record-delegate")
-                    .assumedBy(new CompositePrincipal(principals))
+                    .assumedBy(new CompositePrincipal(accountPrincipals(props.delegateAccountIds())))
                     .description("Allows service accounts to create Route53 records in the root hosted zone")
                     .build();
-            delegateRole.addToPolicy(PolicyStatement.Builder.create()
+            recordDelegateRole.addToPolicy(PolicyStatement.Builder.create()
                     .actions(List.of("route53:ChangeResourceRecordSets", "route53:GetHostedZone"))
-                    .resources(List.of("arn:aws:route53:::hostedzone/" + props.hostedZoneId()))
+                    .resources(List.of(hostedZoneArn))
                     .build());
-            cfnOutput(this, "Route53DelegateRoleArn", delegateRole.getRoleArn());
-            infof(
-                    "Created Route53 delegate role for accounts: %s",
-                    String.join(", ", props.route53DelegateAccountIds()));
+            cfnOutput(this, "Route53DelegateRoleArn", recordDelegateRole.getRoleArn());
+
+            var holdingFailoverRole = Role.Builder.create(this, "HoldingFailoverDelegateRole")
+                    .roleName("root-holding-failover-delegate")
+                    .assumedBy(new CompositePrincipal(accountPrincipals(props.delegateAccountIds())))
+                    .description(
+                            "Allows service accounts to move their live aliases onto the apex holding distributions")
+                    .build();
+            holdingFailoverRole.addToPolicy(PolicyStatement.Builder.create()
+                    .actions(List.of("route53:ChangeResourceRecordSets", "route53:GetHostedZone"))
+                    .resources(List.of(hostedZoneArn))
+                    .build());
+            holdingFailoverRole.addToPolicy(PolicyStatement.Builder.create()
+                    .actions(List.of(
+                            "cloudfront:GetDistribution",
+                            "cloudfront:GetDistributionConfig",
+                            "cloudfront:UpdateDistribution",
+                            "cloudfront:ListTagsForResource"))
+                    .resources(List.of("arn:aws:cloudfront::" + this.getAccount() + ":distribution/*"))
+                    .build());
+            // Neither of these supports resource-level IAM, so "*" is the only grant AWS accepts.
+            // Both are reads: one lists this account's distributions, the other resolves the
+            // OriginFor tag to a distribution ARN.
+            holdingFailoverRole.addToPolicy(PolicyStatement.Builder.create()
+                    .actions(List.of("cloudfront:ListDistributions", "tag:GetResources"))
+                    .resources(List.of("*"))
+                    .build());
+            cfnOutput(this, "HoldingFailoverDelegateRoleArn", holdingFailoverRole.getRoleArn());
+
+            infof("Created delegate roles for accounts: %s", String.join(", ", props.delegateAccountIds()));
         }
 
         infof("RootDnsStack %s created", this.getNode().getId());
