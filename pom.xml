@@ -7,8 +7,8 @@
     <packaging>jar</packaging>
 
     <properties>
-        <cdk.version>2.238.0</cdk.version>
-        <immutables.version>2.12.1</immutables.version>
+        <cdk.version>2.266.0</cdk.version>
+        <immutables.version>2.12.2</immutables.version>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -19,7 +19,7 @@
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>bom</artifactId>
-                <version>2.41.34</version>
+                <version>2.54.2</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -36,7 +36,7 @@
             <dependency>
                 <groupId>software.constructs</groupId>
                 <artifactId>constructs</artifactId>
-                <version>10.5.1</version>
+                <version>10.8.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -86,7 +86,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.10.0</version>
                 <configuration>
                     <java>
                         <includes>
@@ -131,7 +131,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.2.0</version>
                 <executions>
                     <execution>
                         <id>retag-root</id>
@@ -154,7 +154,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.0</version>
+                <version>3.15.0</version>
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
@@ -176,7 +176,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.6.0</version>
+                <version>3.6.3</version>
                 <executions>
                     <execution>
                         <id>enforce-maven</id>
@@ -196,7 +196,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
+                <version>3.6.2</version>
                 <executions>
                     <execution>
                         <id>shade-base</id>
@@ -268,7 +268,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-wrapper-plugin</artifactId>
-                <version>3.3.2</version>
+                <version>3.3.4</version>
                 <configuration>
                     <mavenVersion>3.9.10</mavenVersion>
                 </configuration>
