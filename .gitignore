@@ -21,6 +21,10 @@
 .claude/settings.local.json
 CLAUDE.local.md
 
+# machine-local convenience symlinks to the skill docs, which really live at
+# .claude/skills/<name>/SKILL.md — recreate with `ln -s`, never commit
+/SKILL_*.md
+
 # CDK output
 /cdk.out/
 
