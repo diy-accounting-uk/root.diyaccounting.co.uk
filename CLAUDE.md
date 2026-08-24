@@ -32,11 +32,10 @@ This repository manages the **root AWS account** (887764105431) for diyaccountin
 - **RootDnsStack**: Alias records pointing to gateway/spreadsheets CloudFront distributions
 - **ApexStack** (ci + prod): Maintenance page at `ci-holding.diyaccounting.co.uk` /
   `holding.diyaccounting.co.uk`, CloudFront distribution tagged `OriginFor=<holding domain>`
-- **Cross-account delegation roles**, both trusting the submit, gateway and spreadsheets accounts by
-  `sts:AssumeRole` from their own deployment roles, so no GitHub OIDC trust reaches this account:
-  - `root-route53-record-delegate` — write records in the hosted zone
-  - `root-holding-failover-delegate` — the same records, plus read and update this account's
-    CloudFront distributions, so a service repo can move its live alias onto a holding distribution
+- **Cross-account delegation role**: `root-route53-record-delegate`, trusted by the submit, gateway
+  and spreadsheets accounts via `sts:AssumeRole` from their own deployment roles, so no GitHub OIDC
+  trust reaches this account. It grants records in the hosted zone only — enough for both alias
+  upserts and ACM certificate-validation CNAMEs.
 
 **What this repo does NOT have**: Lambda, DynamoDB, Cognito, API Gateway, Docker, ngrok, HMRC, Stripe, or any application code.
 
@@ -120,8 +119,10 @@ reverse. The domains it moves are `ci-gateway.diyaccounting.co.uk` for ci, and
 the same list `ApexStack` issues its certificate over, because CloudFront rejects an alias the
 certificate does not cover.
 
-A `deploy.yml` run while failed over puts the alias records back on the gateway distribution. Run
-`deploy-holding.yml` with `target: restore` before deploying DNS again.
+`deploy.yml` refuses to run while a failover is live. It checks each holding distribution's aliases
+first and fails if one is serving a live domain, because `RootDnsStack` would repoint the records at
+the live distributions and `ApexStack` would strip the live aliases back off the holding
+distribution. Run `deploy-holding.yml` with `target: restore` first.
 
 Both workflows use OIDC authentication with these GitHub repository variables:
 
