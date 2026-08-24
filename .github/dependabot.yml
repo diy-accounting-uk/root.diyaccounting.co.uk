@@ -1,13 +1,26 @@
-# ./.github/dependabot.yml
-# See: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 version: 2
 updates:
   - package-ecosystem: github-actions
-    directories:
-      - "/.github/workflows"
+    directory: "/"
     schedule:
       interval: "monthly"
-    labels:
-      - dependencies
-      - automated
-      - automerge
+    groups:
+      actions:
+        patterns:
+          - "*"
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      npm:
+        patterns:
+          - "*"
+  - package-ecosystem: maven
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      maven:
+        patterns:
+          - "*"
