@@ -52,6 +52,12 @@ public class RootEnvironment {
         var spreadsheetsCfDomain = envOr(
                 "SPREADSHEETS_CLOUDFRONT_DOMAIN",
                 KindCdk.getContextValueString(app, "spreadsheetsCloudFrontDomain", ""));
+        var ciSpreadsheetsHoldingCfDomain = envOr(
+                "CI_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN",
+                KindCdk.getContextValueString(app, "ciSpreadsheetsHoldingCloudFrontDomain", ""));
+        var prodSpreadsheetsHoldingCfDomain = envOr(
+                "PROD_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN",
+                KindCdk.getContextValueString(app, "prodSpreadsheetsHoldingCloudFrontDomain", ""));
 
         // Comma-separated list of account IDs to trust for cross-account Route53 delegation
         var delegateAccountsCsv = envOr("ROUTE53_DELEGATE_ACCOUNTS", "");
@@ -73,6 +79,8 @@ public class RootEnvironment {
                 apexCfDomain,
                 wwwCfDomain,
                 spreadsheetsCfDomain,
+                ciSpreadsheetsHoldingCfDomain,
+                prodSpreadsheetsHoldingCfDomain,
                 delegateAccountIds);
         app.synth();
         infof("CDK synth complete for root DNS environment");
@@ -89,6 +97,8 @@ public class RootEnvironment {
             String apexCfDomain,
             String wwwCfDomain,
             String spreadsheetsCfDomain,
+            String ciSpreadsheetsHoldingCfDomain,
+            String prodSpreadsheetsHoldingCfDomain,
             List<String> route53DelegateAccountIds) {
         // Root account DNS management runs in us-east-1 (Route53 is global but CDK needs a region)
         Environment usEast1Env = Environment.builder()
@@ -113,6 +123,8 @@ public class RootEnvironment {
                         .apexCloudFrontDomain(apexCfDomain)
                         .wwwCloudFrontDomain(wwwCfDomain)
                         .spreadsheetsCloudFrontDomain(spreadsheetsCfDomain)
+                        .ciSpreadsheetsHoldingCloudFrontDomain(ciSpreadsheetsHoldingCfDomain)
+                        .prodSpreadsheetsHoldingCloudFrontDomain(prodSpreadsheetsHoldingCfDomain)
                         .route53DelegateAccountIds(route53DelegateAccountIds)
                         .build());
 

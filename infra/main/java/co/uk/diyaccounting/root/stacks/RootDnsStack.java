@@ -37,6 +37,8 @@ import software.constructs.Construct;
  * - diyaccounting.co.uk (apex) → prod gateway CloudFront
  * - www.diyaccounting.co.uk → prod gateway CloudFront
  * - spreadsheets.diyaccounting.co.uk → prod spreadsheets CloudFront
+ * - ci-holding.spreadsheets.diyaccounting.co.uk → CI spreadsheets holding CloudFront
+ * - holding.spreadsheets.diyaccounting.co.uk → prod spreadsheets holding CloudFront
  */
 public class RootDnsStack extends Stack {
 
@@ -88,6 +90,18 @@ public class RootDnsStack extends Stack {
         /** CloudFront domain name for spreadsheets.diyaccounting.co.uk. Empty to skip. */
         @Value.Default
         default String spreadsheetsCloudFrontDomain() {
+            return "";
+        }
+
+        /** CloudFront domain name for ci-holding.spreadsheets.diyaccounting.co.uk. Empty to skip. */
+        @Value.Default
+        default String ciSpreadsheetsHoldingCloudFrontDomain() {
+            return "";
+        }
+
+        /** CloudFront domain name for holding.spreadsheets.diyaccounting.co.uk. Empty to skip. */
+        @Value.Default
+        default String prodSpreadsheetsHoldingCloudFrontDomain() {
             return "";
         }
 
@@ -150,6 +164,30 @@ public class RootDnsStack extends Stack {
             Route53AliasUpsert.upsertAliasToCloudFront(
                     this, "ProdSpreadsheets", zone, "prod-spreadsheets", props.prodSpreadsheetsCloudFrontDomain());
             cfnOutput(this, "ProdSpreadsheetsDomain", "prod-spreadsheets." + props.hostedZoneName());
+        }
+
+        // Spreadsheets holding pages; the distributions live in the spreadsheets account,
+        // which creates no Route53 records of its own.
+        if (!props.ciSpreadsheetsHoldingCloudFrontDomain().isBlank()) {
+            infof("Creating ci-holding.spreadsheets alias to %s", props.ciSpreadsheetsHoldingCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this,
+                    "CiSpreadsheetsHolding",
+                    zone,
+                    "ci-holding.spreadsheets",
+                    props.ciSpreadsheetsHoldingCloudFrontDomain());
+            cfnOutput(this, "CiSpreadsheetsHoldingDomain", "ci-holding.spreadsheets." + props.hostedZoneName());
+        }
+
+        if (!props.prodSpreadsheetsHoldingCloudFrontDomain().isBlank()) {
+            infof("Creating holding.spreadsheets alias to %s", props.prodSpreadsheetsHoldingCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this,
+                    "ProdSpreadsheetsHolding",
+                    zone,
+                    "holding.spreadsheets",
+                    props.prodSpreadsheetsHoldingCloudFrontDomain());
+            cfnOutput(this, "ProdSpreadsheetsHoldingDomain", "holding.spreadsheets." + props.hostedZoneName());
         }
 
         // Phase 2: Production domain DNS records (go-live switchover)

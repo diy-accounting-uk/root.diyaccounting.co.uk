@@ -320,9 +320,26 @@ jobs:
             echo "Spreadsheets: ${SS:-not found}"
           fi
 
+          # Holding distributions are deployed by the spreadsheets repo and may not exist yet
+          echo "Looking up ci-spreadsheets-HoldingStack DistributionDomainName..."
+          CI_SS_HOLD=$(aws cloudformation describe-stacks \
+            --stack-name ci-spreadsheets-HoldingStack \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+            --output text 2>/dev/null || echo "")
+          echo "CI spreadsheets holding: ${CI_SS_HOLD:-not found}"
+
+          echo "Looking up prod-spreadsheets-HoldingStack DistributionDomainName..."
+          PROD_SS_HOLD=$(aws cloudformation describe-stacks \
+            --stack-name prod-spreadsheets-HoldingStack \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+            --output text 2>/dev/null || echo "")
+          echo "Prod spreadsheets holding: ${PROD_SS_HOLD:-not found}"
+
           echo "ci-spreadsheets-cloudfront-domain=${CI_SS}" | tee -a "$GITHUB_OUTPUT"
           echo "prod-spreadsheets-cloudfront-domain=${PROD_SS}" | tee -a "$GITHUB_OUTPUT"
           echo "spreadsheets-cloudfront-domain=${SS}" | tee -a "$GITHUB_OUTPUT"
+          echo "ci-spreadsheets-holding-cloudfront-domain=${CI_SS_HOLD}" | tee -a "$GITHUB_OUTPUT"
+          echo "prod-spreadsheets-holding-cloudfront-domain=${PROD_SS_HOLD}" | tee -a "$GITHUB_OUTPUT"
 
       # === Deploy RootDnsStack (root account) ===
 
@@ -358,6 +375,8 @@ jobs:
           echo "Apex domain: $APEX_CLOUDFRONT_DOMAIN"
           echo "Www domain: $WWW_CLOUDFRONT_DOMAIN"
           echo "Spreadsheets domain: $SPREADSHEETS_CLOUDFRONT_DOMAIN"
+          echo "CI spreadsheets holding domain: $CI_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN"
+          echo "Prod spreadsheets holding domain: $PROD_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN"
           echo "Route53 delegate accounts: $ROUTE53_DELEGATE_ACCOUNTS"
           cd cdk-root \
             && npx cdk deploy \
@@ -375,6 +394,8 @@ jobs:
           APEX_CLOUDFRONT_DOMAIN: ${{ steps.lookup-gateway.outputs.apex-cloudfront-domain }}
           WWW_CLOUDFRONT_DOMAIN: ${{ steps.lookup-gateway.outputs.www-cloudfront-domain }}
           SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.spreadsheets-cloudfront-domain }}
+          CI_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.ci-spreadsheets-holding-cloudfront-domain }}
+          PROD_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.prod-spreadsheets-holding-cloudfront-domain }}
           ROUTE53_DELEGATE_ACCOUNTS: "367191799875,972912397388,283165661847,064390746177"
 
       - name: Deploy ci-root-ApexStack (CDK)
