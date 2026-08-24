@@ -35,6 +35,14 @@ This repository manages the **root AWS account** (887764105431) for diyaccountin
 
 **What this repo does NOT have**: Lambda, DynamoDB, Cognito, API Gateway, Docker, ngrok, HMRC, Stripe, or any application code.
 
+## Skills
+
+Skills live at `.claude/skills/<name>/SKILL.md`, each with a root symlink (`SKILL_<NAME>.md`) for
+convenience — gitignored, recreate with `ln -s` if missing.
+
+- `.claude/skills/plain-prose/SKILL.md` — writing rules for plain, human prose; follow this for all human-facing text (docs, comments, chat)
+- `.claude/skills/do-next/SKILL.md` — dispatch `NEXT.md`'s open items as worktree-isolated sub-agents
+
 ## Git Workflow
 
 See `../CLAUDE.md` for full rules. Branch naming: `claude/<short-description>`.
