@@ -412,13 +412,16 @@ public class ApexStack extends Stack {
                 .build();
 
         // Outputs
-        cfnOutput(this, "BaseUrl", props.sharedNames().baseUrl);
+        // sharedNames().baseUrl is derived from envName/subDomainName for submit-style deployment
+        // domains, which does not match this stack's holding domain, so build it directly here.
+        String holdingBaseUrl = "https://%s/".formatted(props.sharedNames().holdingDomainName);
+        cfnOutput(this, "BaseUrl", holdingBaseUrl);
         cfnOutput(this, "CertificateArn", cert.getCertificateArn());
         cfnOutput(this, "ApexWebDistributionDomainName", this.distribution.getDomainName());
         cfnOutput(this, "DistributionId", this.distribution.getDistributionId());
         cfnOutput(this, "AliasRecord", this.aliasRecordDomainName);
         cfnOutput(this, "AliasRecordV6", this.aliasRecordV6DomainName);
 
-        infof("ApexStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
+        infof("ApexStack %s created successfully for %s", this.getNode().getId(), holdingBaseUrl);
     }
 }
