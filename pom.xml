@@ -270,7 +270,7 @@
                 <artifactId>maven-wrapper-plugin</artifactId>
                 <version>3.3.4</version>
                 <configuration>
-                    <mavenVersion>3.9.10</mavenVersion>
+                    <mavenVersion>3.9.16</mavenVersion>
                 </configuration>
             </plugin>
         </plugins>
