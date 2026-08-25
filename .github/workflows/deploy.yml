@@ -363,11 +363,20 @@ jobs:
               continue
             fi
             DISTRIBUTION_ID="${DISTRIBUTION_ARN##*/}"
-            CLAIMED=$(aws cloudfront get-distribution \
+            GET_DISTRIBUTION_OUTPUT=$(aws cloudfront get-distribution \
               --id "${DISTRIBUTION_ID}" \
               --query 'Distribution.DistributionConfig.Aliases.Items' \
-              --output json | jq -r --arg holding "${HOLDING_DOMAIN}" \
-                '[ (. // [])[] | select(. != $holding) ] | join(", ")')
+              --output json 2>&1) && GET_DISTRIBUTION_EXIT=0 || GET_DISTRIBUTION_EXIT=$?
+            if [ "$GET_DISTRIBUTION_EXIT" -ne 0 ]; then
+              if echo "$GET_DISTRIBUTION_OUTPUT" | grep -q 'NoSuchDistribution'; then
+                echo "${HOLDING_DOMAIN} tag points at ${DISTRIBUTION_ID}, which no longer exists (stale tag index); nothing to check."
+                continue
+              fi
+              echo "::error::Could not verify failover state for ${HOLDING_DOMAIN} (${DISTRIBUTION_ID}): ${GET_DISTRIBUTION_OUTPUT}"
+              exit 1
+            fi
+            CLAIMED=$(echo "$GET_DISTRIBUTION_OUTPUT" | jq -r --arg holding "${HOLDING_DOMAIN}" \
+              '[ (. // [])[] | select(. != $holding) ] | join(", ")')
             if [ -n "$CLAIMED" ]; then
               echo "::error::${HOLDING_DOMAIN} (${DISTRIBUTION_ID}) is serving live domains: ${CLAIMED}"
               FAILED_OVER="yes"
