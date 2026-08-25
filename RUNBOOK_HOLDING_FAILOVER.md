@@ -13,10 +13,10 @@ failover workflow of its own — everything for the gateway domains happens here
 
 Two CloudFront distributions, one per environment, both `ApexStack`:
 
-| Environment | Stack | Holding domain | `OriginFor` tag | Live domains it takes over |
-|---|---|---|---|---|
-| prod | `prod-root-ApexStack` | `holding.diyaccounting.co.uk` | `holding.diyaccounting.co.uk` | `diyaccounting.co.uk`, `www.diyaccounting.co.uk`, `prod-gateway.diyaccounting.co.uk` |
-| ci | `ci-root-ApexStack` | `ci-holding.diyaccounting.co.uk` | `ci-holding.diyaccounting.co.uk` | `ci-gateway.diyaccounting.co.uk` |
+| Environment | Stack                 | Holding domain                   | `OriginFor` tag                  | Live domains it takes over                                                           |
+| ----------- | --------------------- | -------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------ |
+| prod        | `prod-root-ApexStack` | `holding.diyaccounting.co.uk`    | `holding.diyaccounting.co.uk`    | `diyaccounting.co.uk`, `www.diyaccounting.co.uk`, `prod-gateway.diyaccounting.co.uk` |
+| ci          | `ci-root-ApexStack`   | `ci-holding.diyaccounting.co.uk` | `ci-holding.diyaccounting.co.uk` | `ci-gateway.diyaccounting.co.uk`                                                     |
 
 Each distribution serves a single static page titled "Maintenance – DIY Accounting" with the
 heading "We'll be right back". Every response carries a `Server: DIY-Accounting` header. A 403 or
@@ -118,11 +118,11 @@ where `<service>` is `gateway`, `spreadsheets` or `submit`, and `<env>` is `ci` 
 parameter lives in the service's own AWS account, type `String`, and is written only by that
 service's own `deploy.yml` after a green smoke test.
 
-| Service | Parameter | Written by | Value | Consumed by |
-|---|---|---|---|---|
-| `submit` | `/submit/<env>/last-known-good-deployment` | `submit.diyaccounting.co.uk` `deploy.yml` | deployment name (e.g. `prod-2078c71`) | `submit.diyaccounting.co.uk` `set-origins.yml` (`domain-source: last-known-good`) |
-| `spreadsheets` | `/spreadsheets/<env>/last-known-good-deployment` | `spreadsheets.diyaccounting.co.uk` `deploy.yml` | commit SHA | not yet consumed — spreadsheets fails back with `deploy-holding.yml`'s `target: restore` instead |
-| `gateway` | `/gateway/<env>/last-known-good-deployment` | not yet written | commit SHA | not yet consumed — gateway fails back with this repo's `deploy-holding.yml` `target: restore` |
+| Service        | Parameter                                        | Written by                                      | Value                                 | Consumed by                                                                                      |
+| -------------- | ------------------------------------------------ | ----------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `submit`       | `/submit/<env>/last-known-good-deployment`       | `submit.diyaccounting.co.uk` `deploy.yml`       | deployment name (e.g. `prod-2078c71`) | `submit.diyaccounting.co.uk` `set-origins.yml` (`domain-source: last-known-good`)                |
+| `spreadsheets` | `/spreadsheets/<env>/last-known-good-deployment` | `spreadsheets.diyaccounting.co.uk` `deploy.yml` | commit SHA                            | not yet consumed — spreadsheets fails back with `deploy-holding.yml`'s `target: restore` instead |
+| `gateway`      | `/gateway/<env>/last-known-good-deployment`      | not yet written                                 | commit SHA                            | not yet consumed — gateway fails back with this repo's `deploy-holding.yml` `target: restore`    |
 
 Only submit deploys a new CloudFront distribution per commit, so only submit has a meaningful
 last-known-good value to redeploy at. Gateway and spreadsheets each run one long-lived
