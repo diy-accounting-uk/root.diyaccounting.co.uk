@@ -30,10 +30,21 @@ deploy of `ApexStack`, because this account can resolve the zone directly.
 
 ## When to fail over
 
-Fail over when the site returns 5xx for more than five minutes, a deploy has left the origin
-broken and rolling forward is not immediate, there is an active attack, or an AWS regional
-incident is affecting the origin. Do not fail over for a slow site or a single failing route —
-the holding page replaces the whole site, not one path.
+This is a last resort, for when the site cannot be fixed quickly or is under attack. It is not a
+performance measure and not a fix for one broken route — it replaces the whole site with a static
+page.
+
+Reach for it when a deploy has left the origin broken and rolling forward is not immediate, when
+an attack is in progress, or when an AWS incident is affecting the origin.
+
+What makes it worth having: the holding page is a static file in S3 behind CloudFront, with no
+dynamic AWS deployment anywhere in the request path. There is nothing to inject into, because
+nothing is served from a database or a function, and CloudFront absorbs volume that would
+overwhelm an origin. So it stays up in exactly the situations that take the real site down.
+
+Expect the switch to be slow, and accept it. Users cannot work either way while the site is
+broken, so several minutes of blank responses during the cutover costs nothing that the incident
+has not already cost.
 
 ## Who authorises
 
@@ -57,8 +68,13 @@ record change is what a resolver sees on its next lookup.
 
 ## Expected time to take effect
 
-10 to 20 minutes, dominated by the two `aws cloudfront wait distribution-deployed` calls (one per
-distribution). Treat this as an observed range and correct it after the first real exercise.
+Around 20 minutes, dominated by two `aws cloudfront wait distribution-deployed` calls. Measured on
+a real ci exercise, not estimated.
+
+**The live domain serves nothing for most of that window.** CloudFront enforces alias uniqueness
+globally, so the name has to be fully released from the live distribution and propagated before
+the holding distribution can claim it. There is no overlap and no progressive cutover: the site
+goes blank, then the holding page appears. That is inherent to the mechanism, not a fault.
 
 ## How to fail back
 
