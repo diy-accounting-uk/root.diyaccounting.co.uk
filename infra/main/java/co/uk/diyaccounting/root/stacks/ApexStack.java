@@ -373,7 +373,7 @@ public class ApexStack extends Stack {
                         .build());
 
         // *** CRITICAL: enforce creation order so source exists before delivery ***
-        cfLogsDelivery.addDependency(cfLogsSource);
+        cfLogsDelivery.addResourceDependency(cfLogsSource);
 
         // Grant CloudFront access to the origin lambdas
         this.distributionInvokeFnUrl = Permission.builder()
