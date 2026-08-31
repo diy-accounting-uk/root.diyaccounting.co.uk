@@ -457,6 +457,33 @@ jobs:
       # approval and should run before this export starts producing: Data Exports has no backfill,
       # so tag data is only visible in the CUR from whichever day activation actually happened.
 
+      - name: Verify eu-west-2 CDK bootstrap assets bucket exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          # root-CostReportingStack is the first stack this app deploys into eu-west-2, so this is
+          # the first time a broken bootstrap in that region would surface. CloudFormation can
+          # report the CDKToolkit stack as CREATE_COMPLETE while the staging bucket it created no
+          # longer exists (deleted outside CloudFormation) — `cdk deploy` then fails asset
+          # publishing with a generic "Is account bootstrapped?" error that reads like the account
+          # was never bootstrapped at all, sending you to re-run `cdk bootstrap` when a plain
+          # bootstrap re-run leaves an unchanged CDKToolkit template as a no-op update and doesn't
+          # repair the drift. Fail here instead, with the actual remediation.
+          BUCKET="cdk-hnb659fds-assets-${{ vars.ROOT_ACCOUNT_ID }}-eu-west-2"
+          if ! aws s3api head-bucket --bucket "$BUCKET" --region eu-west-2 2>/dev/null; then
+            echo "::error::CDK bootstrap asset bucket ${BUCKET} does not exist, even though the" >&2
+            echo "::error::CDKToolkit stack in eu-west-2 still reports it as CREATE_COMPLETE. The" >&2
+            echo "::error::bucket (and likely the ECR container-assets repo alongside it) was" >&2
+            echo "::error::deleted outside CloudFormation, so the stack is drifted rather than" >&2
+            echo "::error::simply missing. Re-bootstrapping in place won't recreate it, because the" >&2
+            echo "::error::template hasn't changed. Repair it by deleting and recreating the" >&2
+            echo "::error::bootstrap stack:" >&2
+            echo "::error::  aws cloudformation delete-stack --stack-name CDKToolkit --region eu-west-2" >&2
+            echo "::error::  npx cdk bootstrap aws://${{ vars.ROOT_ACCOUNT_ID }}/eu-west-2" >&2
+            exit 1
+          fi
+          echo "eu-west-2 CDK bootstrap asset bucket ${BUCKET} exists."
+
       - name: Deploy root-CostReportingStack (CDK)
         run: |
           echo "Deploying stack: root-CostReportingStack"
