@@ -113,6 +113,59 @@ public final class Route53AliasUpsert {
                 .build();
     }
 
+    /**
+     * UPSERTs a plain A record (not an AliasTarget) pointing at a literal IP address.
+     *
+     * @param scope construct scope
+     * @param idPrefix unique id prefix for custom resources
+     * @param zone hosted zone where the record should be created
+     * @param relativeRecordName relative record name within the zone (null or "" for zone apex)
+     * @param ipAddress literal IPv4 address for the A record
+     */
+    public static void upsertARecord(
+            Construct scope, String idPrefix, IHostedZone zone, String relativeRecordName, String ipAddress) {
+        String fqdn = buildFqdn(zone, relativeRecordName);
+
+        Map<String, Object> resourceRecord = new java.util.HashMap<>();
+        resourceRecord.put("Value", ipAddress);
+
+        Map<String, Object> rrset = new java.util.HashMap<>();
+        rrset.put("Name", fqdn);
+        rrset.put("Type", "A");
+        rrset.put("TTL", 300);
+        rrset.put("ResourceRecords", java.util.List.of(resourceRecord));
+
+        Map<String, Object> change = new java.util.HashMap<>();
+        change.put("Action", "UPSERT");
+        change.put("ResourceRecordSet", rrset);
+
+        Map<String, Object> changeBatch = new java.util.HashMap<>();
+        changeBatch.put("Changes", java.util.List.of(change));
+
+        Map<String, Object> params = new java.util.HashMap<>();
+        params.put("HostedZoneId", zone.getHostedZoneId());
+        params.put("ChangeBatch", changeBatch);
+
+        var policy = AwsCustomResourcePolicy.fromStatements(List.of(
+                software.amazon.awscdk.services.iam.PolicyStatement.Builder.create()
+                        .actions(List.of("route53:ChangeResourceRecordSets"))
+                        .resources(List.of("arn:aws:route53:::hostedzone/" + zone.getHostedZoneId()))
+                        .build()));
+
+        AwsSdkCall upsert = AwsSdkCall.builder()
+                .service("Route53")
+                .action("changeResourceRecordSets")
+                .parameters(params)
+                .physicalResourceId(PhysicalResourceId.of(idPrefix + "-A-" + fqdn))
+                .build();
+
+        AwsCustomResource.Builder.create(scope, idPrefix + "-A-Upsert")
+                .policy(policy)
+                .onCreate(upsert)
+                .onUpdate(upsert)
+                .build();
+    }
+
     private static String buildFqdn(IHostedZone zone, String relativeRecordName) {
         if (relativeRecordName == null || relativeRecordName.isBlank()) {
             return zone.getZoneName();

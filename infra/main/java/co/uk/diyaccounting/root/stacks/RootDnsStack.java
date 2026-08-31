@@ -39,6 +39,7 @@ import software.constructs.Construct;
  * - spreadsheets.diyaccounting.co.uk → prod spreadsheets CloudFront
  * - ci-holding.spreadsheets.diyaccounting.co.uk → CI spreadsheets holding CloudFront
  * - holding.spreadsheets.diyaccounting.co.uk → prod spreadsheets holding CloudFront
+ * - local.submit.diyaccounting.co.uk → 127.0.0.1 (developer loopback, for the local TLS front door)
  */
 public class RootDnsStack extends Stack {
 
@@ -102,6 +103,12 @@ public class RootDnsStack extends Stack {
         /** CloudFront domain name for holding.spreadsheets.diyaccounting.co.uk. Empty to skip. */
         @Value.Default
         default String prodSpreadsheetsHoldingCloudFrontDomain() {
+            return "";
+        }
+
+        /** Loopback IP for local.submit.diyaccounting.co.uk (developer machines). Empty to skip. */
+        @Value.Default
+        default String localSubmitTargetIp() {
             return "";
         }
 
@@ -208,6 +215,14 @@ public class RootDnsStack extends Stack {
             Route53AliasUpsert.upsertAliasToCloudFront(
                     this, "Spreadsheets", zone, "spreadsheets", props.spreadsheetsCloudFrontDomain());
             cfnOutput(this, "SpreadsheetsDomain", "spreadsheets." + props.hostedZoneName());
+        }
+
+        // Developer loopback record: every machine that resolves this name reaches its own
+        // localhost, where the local server terminates TLS with a Let's Encrypt certificate.
+        if (!props.localSubmitTargetIp().isBlank()) {
+            infof("Creating local.submit A record to %s", props.localSubmitTargetIp());
+            Route53AliasUpsert.upsertARecord(this, "LocalSubmit", zone, "local.submit", props.localSubmitTargetIp());
+            cfnOutput(this, "LocalSubmitDomain", "local.submit." + props.hostedZoneName());
         }
 
         // Cross-account IAM role for Route53 record management, reached by sts:AssumeRole from each

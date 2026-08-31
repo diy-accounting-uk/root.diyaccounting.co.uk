@@ -63,6 +63,8 @@ public class RootEnvironment {
         var prodSpreadsheetsHoldingCfDomain = envOr(
                 "PROD_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN",
                 KindCdk.getContextValueString(app, "prodSpreadsheetsHoldingCloudFrontDomain", ""));
+        var localSubmitTargetIp =
+                envOr("LOCAL_SUBMIT_TARGET_IP", KindCdk.getContextValueString(app, "localSubmitTargetIp", ""));
 
         // Comma-separated list of service account IDs the cross-account delegate roles trust
         var delegateAccountsCsv = envOr("DELEGATE_ACCOUNTS", "");
@@ -86,6 +88,7 @@ public class RootEnvironment {
                 spreadsheetsCfDomain,
                 ciSpreadsheetsHoldingCfDomain,
                 prodSpreadsheetsHoldingCfDomain,
+                localSubmitTargetIp,
                 delegateAccountIds);
         app.synth();
         infof("CDK synth complete for root DNS environment");
@@ -104,6 +107,7 @@ public class RootEnvironment {
             String spreadsheetsCfDomain,
             String ciSpreadsheetsHoldingCfDomain,
             String prodSpreadsheetsHoldingCfDomain,
+            String localSubmitTargetIp,
             List<String> delegateAccountIds) {
         // Root account DNS management runs in us-east-1 (Route53 is global but CDK needs a region)
         Environment usEast1Env = Environment.builder()
@@ -130,6 +134,7 @@ public class RootEnvironment {
                         .spreadsheetsCloudFrontDomain(spreadsheetsCfDomain)
                         .ciSpreadsheetsHoldingCloudFrontDomain(ciSpreadsheetsHoldingCfDomain)
                         .prodSpreadsheetsHoldingCloudFrontDomain(prodSpreadsheetsHoldingCfDomain)
+                        .localSubmitTargetIp(localSubmitTargetIp)
                         .delegateAccountIds(delegateAccountIds)
                         .build());
 
