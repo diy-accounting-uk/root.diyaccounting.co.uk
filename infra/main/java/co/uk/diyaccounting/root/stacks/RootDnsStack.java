@@ -16,6 +16,7 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.iam.AccountPrincipal;
+import software.amazon.awscdk.services.iam.ArnPrincipal;
 import software.amazon.awscdk.services.iam.CompositePrincipal;
 import software.amazon.awscdk.services.iam.IPrincipal;
 import software.amazon.awscdk.services.iam.PolicyStatement;
@@ -42,6 +43,11 @@ import software.constructs.Construct;
  * - local.submit.diyaccounting.co.uk → 127.0.0.1 (developer loopback, for the local TLS front door)
  */
 public class RootDnsStack extends Stack {
+
+    // Operator's AWS Identity Center (SSO) role in this account. root-certbot-dns01 trusts this
+    // identity so `aws --profile certbot-local sts assume-role` works from the operator's machine.
+    private static final String OPERATOR_SSO_ROLE_ARN =
+            "arn:aws:iam::887764105431:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AdministratorAccess_8d2385a3b85cdf3b";
 
     @Value.Immutable
     public interface RootDnsStackProps extends StackProps {
@@ -224,6 +230,24 @@ public class RootDnsStack extends Stack {
             Route53AliasUpsert.upsertARecord(this, "LocalSubmit", zone, "local.submit", props.localSubmitTargetIp());
             cfnOutput(this, "LocalSubmitDomain", "local.submit." + props.hostedZoneName());
         }
+
+        // IAM role for certbot's route53 DNS-01 plugin, run on the operator's machine to issue and
+        // renew the local.submit certificate. Route53 cannot scope ChangeResourceRecordSets below
+        // zone level, so this zone is the tightest grant available.
+        var certbotRole = Role.Builder.create(this, "CertbotDns01Role")
+                .roleName("root-certbot-dns01")
+                .assumedBy(new ArnPrincipal(OPERATOR_SSO_ROLE_ARN))
+                .description("Allows certbot's route53 DNS-01 plugin to issue the local.submit certificate")
+                .build();
+        certbotRole.addToPolicy(PolicyStatement.Builder.create()
+                .actions(List.of("route53:ListHostedZones", "route53:GetChange"))
+                .resources(List.of("*"))
+                .build());
+        certbotRole.addToPolicy(PolicyStatement.Builder.create()
+                .actions(List.of("route53:ChangeResourceRecordSets"))
+                .resources(List.of("arn:aws:route53:::hostedzone/" + props.hostedZoneId()))
+                .build());
+        cfnOutput(this, "CertbotDns01RoleArn", certbotRole.getRoleArn());
 
         // Cross-account IAM role for Route53 record management, reached by sts:AssumeRole from each
         // service account's own deployment role, so no GitHub OIDC trust into this account is needed.
