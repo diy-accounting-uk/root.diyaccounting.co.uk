@@ -9,6 +9,9 @@ import static co.uk.diyaccounting.root.utils.Kind.envOr;
 import static co.uk.diyaccounting.root.utils.Kind.infof;
 
 import co.uk.diyaccounting.root.stacks.ApexStack;
+import co.uk.diyaccounting.root.stacks.CostReportingStack;
+import co.uk.diyaccounting.root.stacks.CostReportingUE1Stack;
+import co.uk.diyaccounting.root.stacks.CostReportingUE1Stack.LinkedAccountBudget;
 import co.uk.diyaccounting.root.stacks.RootDnsStack;
 import co.uk.diyaccounting.root.utils.KindCdk;
 import java.util.Arrays;
@@ -29,6 +32,8 @@ public class RootEnvironment {
     public final RootDnsStack rootDnsStack;
     public final ApexStack ciApexStack;
     public final ApexStack prodApexStack;
+    public final CostReportingStack costReportingStack;
+    public final CostReportingUE1Stack costReportingUE1Stack;
 
     public static void main(final String[] args) {
         App app = new App();
@@ -166,6 +171,62 @@ public class RootEnvironment {
                         .liveDomainNames(apexFailoverDomainNames("prod", hostedZoneName))
                         .accessLogGroupRetentionPeriodDays(90)
                         .build());
+
+        // Cost instrumentation: one bucket + catalogue in eu-west-2 alongside the rest of the
+        // estate, one sibling stack in us-east-1 for the billing control-plane resources that
+        // only run there (see CostReportingUE1Stack's class comment). The management account ID
+        // is a literal here, not derived from CDK_DEFAULT_ACCOUNT: cost filters and cost-category
+        // rules for the other five accounts are already literal cross-account IDs, since none of
+        // those accounts is ever "this stack's account", so the management account is written the
+        // same way for consistency and to keep synth working with no AWS credentials configured.
+        String managementAccount = "887764105431";
+        String costReportsBucketName = "diy-accounting-cost-reports-" + managementAccount;
+        String euWest2Region = "eu-west-2";
+        Environment euWest2Env = Environment.builder()
+                .region(euWest2Region)
+                .account(managementAccount)
+                .build();
+        Environment costReportingUsEast1Env = Environment.builder()
+                .region("us-east-1")
+                .account(managementAccount)
+                .build();
+
+        String costReportingStackId = "root-CostReportingStack";
+        infof("Synthesizing stack %s", costReportingStackId);
+        this.costReportingStack = new CostReportingStack(
+                app,
+                costReportingStackId,
+                CostReportingStack.CostReportingStackProps.builder()
+                        .env(euWest2Env)
+                        .bucketName(costReportsBucketName)
+                        .glueDatabaseName("cost_and_usage")
+                        .athenaWorkGroupName("diy-accounting-cost-reports")
+                        .build());
+
+        String costReportingUE1StackId = "root-CostReportingUE1Stack";
+        infof("Synthesizing stack %s", costReportingUE1StackId);
+        this.costReportingUE1Stack = new CostReportingUE1Stack(
+                app,
+                costReportingUE1StackId,
+                CostReportingUE1Stack.CostReportingUE1StackProps.builder()
+                        .env(costReportingUsEast1Env)
+                        .exportBucketName(costReportsBucketName)
+                        .exportBucketRegion(euWest2Region)
+                        .linkedAccounts(linkedAccountBudgets(managementAccount))
+                        .organisationBudgetLimitUsd(200)
+                        .alertEmail("admin@diyaccounting.co.uk")
+                        .build());
+    }
+
+    /** The six linked accounts, their Workload cost-category names and monthly budgets. */
+    private static List<LinkedAccountBudget> linkedAccountBudgets(String managementAccount) {
+        return List.of(
+                new LinkedAccountBudget(managementAccount, "management", 25),
+                new LinkedAccountBudget("283165661847", "gateway", 5),
+                new LinkedAccountBudget("064390746177", "spreadsheets", 15),
+                new LinkedAccountBudget("367191799875", "submit-ci", 30),
+                new LinkedAccountBudget("972912397388", "submit-prod", 120),
+                new LinkedAccountBudget("914216784828", "submit-backup", 5));
     }
 
     /**
