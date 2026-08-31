@@ -452,6 +452,34 @@ jobs:
               --outputs-file ../cdk-submit-root.out/cdk-outputs-prod-apex.json \
           ;
 
+      # === Deploy cost instrumentation (management account) ===
+      # The allocation-tag activation command in PLAN_COST_INSTRUMENTATION.md needs the operator's
+      # approval and should run before this export starts producing: Data Exports has no backfill,
+      # so tag data is only visible in the CUR from whichever day activation actually happened.
+
+      - name: Deploy root-CostReportingStack (CDK)
+        run: |
+          echo "Deploying stack: root-CostReportingStack"
+          cd cdk-root \
+            && npx cdk deploy \
+              root-CostReportingStack \
+              --require-approval never \
+              --ci true \
+              --no-notices \
+              --outputs-file ../cdk-submit-root.out/cdk-outputs-cost-reporting.json \
+          ;
+
+      - name: Deploy root-CostReportingUE1Stack (CDK)
+        run: |
+          echo "Deploying stack: root-CostReportingUE1Stack"
+          cd cdk-root \
+            && npx cdk deploy \
+              root-CostReportingUE1Stack \
+              --require-approval never \
+              --ci true \
+              --no-notices \
+          ;
+
       - name: Show stack outputs
         run: |
           echo "=== Root DNS Stack Outputs ==="
@@ -460,3 +488,5 @@ jobs:
           cat cdk-submit-root.out/cdk-outputs-ci-apex.json | jq '.'
           echo "=== Prod Apex Stack Outputs ==="
           cat cdk-submit-root.out/cdk-outputs-prod-apex.json | jq '.'
+          echo "=== Cost Reporting Stack Outputs ==="
+          cat cdk-submit-root.out/cdk-outputs-cost-reporting.json | jq '.'
