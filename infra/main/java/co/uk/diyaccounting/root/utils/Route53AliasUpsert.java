@@ -146,8 +146,8 @@ public final class Route53AliasUpsert {
         params.put("HostedZoneId", zone.getHostedZoneId());
         params.put("ChangeBatch", changeBatch);
 
-        var policy = AwsCustomResourcePolicy.fromStatements(List.of(
-                software.amazon.awscdk.services.iam.PolicyStatement.Builder.create()
+        var policy = AwsCustomResourcePolicy.fromStatements(
+                List.of(software.amazon.awscdk.services.iam.PolicyStatement.Builder.create()
                         .actions(List.of("route53:ChangeResourceRecordSets"))
                         .resources(List.of("arn:aws:route53:::hostedzone/" + zone.getHostedZoneId()))
                         .build()));
