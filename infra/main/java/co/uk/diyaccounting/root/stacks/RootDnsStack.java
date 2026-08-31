@@ -47,7 +47,7 @@ public class RootDnsStack extends Stack {
     // Operator's AWS Identity Center (SSO) role in this account. root-certbot-dns01 trusts this
     // identity so `aws --profile certbot-local sts assume-role` works from the operator's machine.
     private static final String OPERATOR_SSO_ROLE_ARN =
-            "arn:aws:iam::887764105431:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AdministratorAccess_8d2385a3b85cdf3b";
+            "arn:aws:iam::887764105431:role/aws-reserved/sso.amazonaws.com/eu-west-2/AWSReservedSSO_AdministratorAccess_8d2385a3b85cdf3b";
 
     @Value.Immutable
     public interface RootDnsStackProps extends StackProps {
