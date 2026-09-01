@@ -20,8 +20,8 @@
     "update:node": "npm run update-to-latest"
   },
   "devDependencies": {
-    "aws-cdk": "^2.1138.0",
-    "npm-check-updates": "^23.0.2",
+    "aws-cdk": "^2.1139.0",
+    "npm-check-updates": "^23.1.0",
     "prettier": "^3.9.6"
   },
   "engines": {
