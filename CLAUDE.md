@@ -53,6 +53,8 @@ convenience — gitignored, recreate with `ln -s` if missing.
 ## Git Workflow
 
 See `../CLAUDE.md` for full rules. Branch naming: `claude/<short-description>`.
+Merge strategy — squash at the worktree, `--merge` to `main`, rebase only on a conflict or an
+overlap, one deploy per head — is in `../CLAUDE.md` under Git Workflow.
 
 ## Build Commands
 

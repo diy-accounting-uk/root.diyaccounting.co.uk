@@ -74,7 +74,9 @@ formatting` before a final commit, and `npm run lint:workflows` for any `.github
    - `git status --short` inside the agent's worktree first. Uncommitted work is a real loss if
      skipped.
    - `cd` to the actual repo root and confirm (`pwd`, `git branch --show-current`) before merging.
-   - `git merge --no-ff` with a message naming the track and what it covers.
+   - `git merge --squash` then one commit naming the track and what it covers: one commit per
+     track, the agent's fixing commits folded in. After a squash `git branch -d` refuses; prove
+     the content landed (`git diff <track-branch> HEAD -- <its files>` empty), then `git branch -D`.
    - Run `./mvnw clean verify` and `npm run formatting` on the merged `main`, not just trust the
      agent's own report.
    - Green: `git push`. Then `git worktree remove` and `git branch -d` the merged branch.
