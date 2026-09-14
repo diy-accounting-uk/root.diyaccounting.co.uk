@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: identity-guard
+run-name: "identity guard for PR #${{ github.event.pull_request.number }}"
+
+# Stops a repeat of an actual incident: a sub-agent set a git identity
+# inline with nothing to catch it, and dozens of commits landed authored by
+# third-party addresses. This check reads every commit added by a pull
+# request and fails the run if any author email is not on the allow-list in
+# .github/allowed-commit-identities.yml.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: identity-guard-root-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check-authors:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check commit authors against the allow-list
+        run: scripts/check-commit-identities.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"

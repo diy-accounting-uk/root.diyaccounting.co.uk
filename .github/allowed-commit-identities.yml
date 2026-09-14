@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Email addresses allowed to author a commit on this repository.
+#
+# A human edits this list, not a workflow. The identity-guard workflow
+# (.github/workflows/identity-guard.yml) reads it on every pull request and
+# fails the run if a commit's author email is not listed here.
+#
+# Add an address when a new legitimate committer or bot starts writing
+# commits. Do not add a third party's address to work around a failure —
+# fix whatever set that author identity instead.
+
+allowed_author_emails:
+  # The operator, across the identities GitHub already resolves to the
+  # operator's own accounts.
+  - antonyccartwright@gmail.com
+
+  # The support mailbox, an org member.
+  - support@diyaccounting.co.uk
+
+  # GitHub's own bots.
+  - github-actions[bot]@users.noreply.github.com
+  - 49699333+dependabot[bot]@users.noreply.github.com
+  - 198982749+Copilot@users.noreply.github.com
