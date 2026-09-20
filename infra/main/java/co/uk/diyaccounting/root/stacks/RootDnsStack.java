@@ -174,18 +174,12 @@ public class RootDnsStack extends Stack {
         var diyaGlCoUkZone = PublicHostedZone.Builder.create(this, "DiyaGlCoUkZone")
                 .zoneName("diya-gl.co.uk")
                 .build();
-        cfnOutput(
-                this,
-                "DiyaGlCoUkNameServers",
-                Fn.join(",", diyaGlCoUkZone.getHostedZoneNameServers()));
+        cfnOutput(this, "DiyaGlCoUkNameServers", Fn.join(",", diyaGlCoUkZone.getHostedZoneNameServers()));
 
         var diyaGlComZone = PublicHostedZone.Builder.create(this, "DiyaGlComZone")
                 .zoneName("diya-gl.com")
                 .build();
-        cfnOutput(
-                this,
-                "DiyaGlComNameServers",
-                Fn.join(",", diyaGlComZone.getHostedZoneNameServers()));
+        cfnOutput(this, "DiyaGlComNameServers", Fn.join(",", diyaGlComZone.getHostedZoneNameServers()));
 
         if (!props.prodDiyaGlCloudFrontDomain().isBlank()) {
             infof("Creating diya-gl apex/www aliases to %s", props.prodDiyaGlCloudFrontDomain());

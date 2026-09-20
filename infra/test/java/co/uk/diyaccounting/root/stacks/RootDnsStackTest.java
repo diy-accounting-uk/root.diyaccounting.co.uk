@@ -58,10 +58,8 @@ class RootDnsStackTest {
         Template template = Template.fromStack(synthRootDnsStack("ci.cloudfront.net", "prod.cloudfront.net"));
 
         template.resourceCountIs("AWS::Route53::HostedZone", 2);
-        template.hasResourceProperties(
-                "AWS::Route53::HostedZone", Match.objectLike(Map.of("Name", "diya-gl.co.uk.")));
-        template.hasResourceProperties(
-                "AWS::Route53::HostedZone", Match.objectLike(Map.of("Name", "diya-gl.com.")));
+        template.hasResourceProperties("AWS::Route53::HostedZone", Match.objectLike(Map.of("Name", "diya-gl.co.uk.")));
+        template.hasResourceProperties("AWS::Route53::HostedZone", Match.objectLike(Map.of("Name", "diya-gl.com.")));
 
         template.resourceCountIs("Custom::AWS", 12);
     }
