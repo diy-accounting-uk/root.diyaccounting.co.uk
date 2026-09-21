@@ -63,6 +63,10 @@ public class RootEnvironment {
         var prodSpreadsheetsHoldingCfDomain = envOr(
                 "PROD_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN",
                 KindCdk.getContextValueString(app, "prodSpreadsheetsHoldingCloudFrontDomain", ""));
+        var ciDiyaGlCfDomain = envOr(
+                "CI_DIYA_GL_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "ciDiyaGlCloudFrontDomain", ""));
+        var prodDiyaGlCfDomain = envOr(
+                "PROD_DIYA_GL_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "prodDiyaGlCloudFrontDomain", ""));
         var localSubmitTargetIp =
                 envOr("LOCAL_SUBMIT_TARGET_IP", KindCdk.getContextValueString(app, "localSubmitTargetIp", ""));
 
@@ -88,6 +92,8 @@ public class RootEnvironment {
                 spreadsheetsCfDomain,
                 ciSpreadsheetsHoldingCfDomain,
                 prodSpreadsheetsHoldingCfDomain,
+                ciDiyaGlCfDomain,
+                prodDiyaGlCfDomain,
                 localSubmitTargetIp,
                 delegateAccountIds);
         app.synth();
@@ -107,6 +113,8 @@ public class RootEnvironment {
             String spreadsheetsCfDomain,
             String ciSpreadsheetsHoldingCfDomain,
             String prodSpreadsheetsHoldingCfDomain,
+            String ciDiyaGlCfDomain,
+            String prodDiyaGlCfDomain,
             String localSubmitTargetIp,
             List<String> delegateAccountIds) {
         // Root account DNS management runs in us-east-1 (Route53 is global but CDK needs a region)
@@ -134,6 +142,8 @@ public class RootEnvironment {
                         .spreadsheetsCloudFrontDomain(spreadsheetsCfDomain)
                         .ciSpreadsheetsHoldingCloudFrontDomain(ciSpreadsheetsHoldingCfDomain)
                         .prodSpreadsheetsHoldingCloudFrontDomain(prodSpreadsheetsHoldingCfDomain)
+                        .ciDiyaGlCloudFrontDomain(ciDiyaGlCfDomain)
+                        .prodDiyaGlCloudFrontDomain(prodDiyaGlCfDomain)
                         .localSubmitTargetIp(localSubmitTargetIp)
                         .delegateAccountIds(delegateAccountIds)
                         .build());

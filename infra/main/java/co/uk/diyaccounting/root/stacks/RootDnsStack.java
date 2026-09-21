@@ -12,6 +12,7 @@ import co.uk.diyaccounting.root.utils.Route53AliasUpsert;
 import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.Fn;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
@@ -24,6 +25,7 @@ import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
+import software.amazon.awscdk.services.route53.PublicHostedZone;
 import software.constructs.Construct;
 
 /**
@@ -41,6 +43,12 @@ import software.constructs.Construct;
  * - ci-holding.spreadsheets.diyaccounting.co.uk → CI spreadsheets holding CloudFront
  * - holding.spreadsheets.diyaccounting.co.uk → prod spreadsheets holding CloudFront
  * - local.submit.diyaccounting.co.uk → 127.0.0.1 (developer loopback, for the local TLS front door)
+ * <p>
+ * Also creates the diya-gl.co.uk and diya-gl.com hosted zones, with their own apex, www and ci
+ * aliases to the DIYA-GL site CloudFront distributions:
+ * - diya-gl.co.uk / diya-gl.com (apex) → prod DIYA-GL site CloudFront
+ * - www.diya-gl.co.uk / www.diya-gl.com → prod DIYA-GL site CloudFront
+ * - ci.diya-gl.co.uk / ci.diya-gl.com → CI DIYA-GL site CloudFront
  */
 public class RootDnsStack extends Stack {
 
@@ -112,6 +120,18 @@ public class RootDnsStack extends Stack {
             return "";
         }
 
+        /** CloudFront domain name for the CI DIYA-GL site. Empty to skip the ci and .com/.co.uk ci aliases. */
+        @Value.Default
+        default String ciDiyaGlCloudFrontDomain() {
+            return "";
+        }
+
+        /** CloudFront domain name for the prod DIYA-GL site. Empty to skip the apex/www aliases. */
+        @Value.Default
+        default String prodDiyaGlCloudFrontDomain() {
+            return "";
+        }
+
         /** Loopback IP for local.submit.diyaccounting.co.uk (developer machines). Empty to skip. */
         @Value.Default
         default String localSubmitTargetIp() {
@@ -148,6 +168,38 @@ public class RootDnsStack extends Stack {
                         .hostedZoneId(props.hostedZoneId())
                         .zoneName(props.hostedZoneName())
                         .build());
+
+        // DIYA-GL's own hosted zones; the registrar is pointed at their name servers after the
+        // first deploy, so the NameServers outputs below are what that step reads.
+        var diyaGlCoUkZone = PublicHostedZone.Builder.create(this, "DiyaGlCoUkZone")
+                .zoneName("diya-gl.co.uk")
+                .build();
+        cfnOutput(this, "DiyaGlCoUkNameServers", Fn.join(",", diyaGlCoUkZone.getHostedZoneNameServers()));
+
+        var diyaGlComZone = PublicHostedZone.Builder.create(this, "DiyaGlComZone")
+                .zoneName("diya-gl.com")
+                .build();
+        cfnOutput(this, "DiyaGlComNameServers", Fn.join(",", diyaGlComZone.getHostedZoneNameServers()));
+
+        if (!props.prodDiyaGlCloudFrontDomain().isBlank()) {
+            infof("Creating diya-gl apex/www aliases to %s", props.prodDiyaGlCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this, "DiyaGlCoUkApex", diyaGlCoUkZone, null, props.prodDiyaGlCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this, "DiyaGlCoUkWww", diyaGlCoUkZone, "www", props.prodDiyaGlCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this, "DiyaGlComApex", diyaGlComZone, null, props.prodDiyaGlCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this, "DiyaGlComWww", diyaGlComZone, "www", props.prodDiyaGlCloudFrontDomain());
+        }
+
+        if (!props.ciDiyaGlCloudFrontDomain().isBlank()) {
+            infof("Creating diya-gl ci aliases to %s", props.ciDiyaGlCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this, "DiyaGlCoUkCi", diyaGlCoUkZone, "ci", props.ciDiyaGlCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this, "DiyaGlComCi", diyaGlComZone, "ci", props.ciDiyaGlCloudFrontDomain());
+        }
 
         // Phase 1: Gateway DNS records
         if (!props.ciGatewayCloudFrontDomain().isBlank()) {
@@ -262,7 +314,14 @@ public class RootDnsStack extends Stack {
                     .build();
             delegateRole.addToPolicy(PolicyStatement.Builder.create()
                     .actions(List.of("route53:ChangeResourceRecordSets", "route53:GetHostedZone"))
-                    .resources(List.of("arn:aws:route53:::hostedzone/" + props.hostedZoneId()))
+                    .resources(List.of(
+                            "arn:aws:route53:::hostedzone/" + props.hostedZoneId(),
+                            diyaGlCoUkZone.getHostedZoneArn(),
+                            diyaGlComZone.getHostedZoneArn()))
+                    .build());
+            delegateRole.addToPolicy(PolicyStatement.Builder.create()
+                    .actions(List.of("route53:ListHostedZonesByName"))
+                    .resources(List.of("*"))
                     .build());
             cfnOutput(this, "Route53DelegateRoleArn", delegateRole.getRoleArn());
             infof("Created Route53 delegate role for accounts: %s", String.join(", ", props.delegateAccountIds()));

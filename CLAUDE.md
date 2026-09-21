@@ -32,7 +32,7 @@
 This repository manages the **root AWS account** (887764105431) for diyaccounting.co.uk:
 
 - **Route53 hosted zone** for `diyaccounting.co.uk` (all DNS records)
-- **RootDnsStack**: Alias records pointing to gateway/spreadsheets CloudFront distributions
+- **RootDnsStack**: Alias records pointing to gateway/spreadsheets CloudFront distributions, plus the `diya-gl.co.uk` and `diya-gl.com` hosted zones and their own aliases
 - **ApexStack** (ci + prod): Maintenance page at `ci-holding.diyaccounting.co.uk` /
   `holding.diyaccounting.co.uk`, CloudFront distribution tagged `OriginFor=<holding domain>`
 - **Cross-account delegation role**: `root-route53-record-delegate`, trusted by the submit, gateway

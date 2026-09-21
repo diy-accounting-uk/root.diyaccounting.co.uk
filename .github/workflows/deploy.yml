@@ -313,11 +313,28 @@ jobs:
             --output text 2>/dev/null || echo "")
           echo "Prod spreadsheets holding: ${PROD_SS_HOLD:-not found}"
 
+          # DiyaGlSiteStack is deployed by the spreadsheets repo and may not exist yet
+          echo "Looking up ci-spreadsheets-DiyaGlSiteStack DistributionDomainName..."
+          CI_DIYA_GL=$(aws cloudformation describe-stacks \
+            --stack-name ci-spreadsheets-DiyaGlSiteStack \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+            --output text 2>/dev/null || echo "")
+          echo "CI diya-gl: ${CI_DIYA_GL:-not found}"
+
+          echo "Looking up prod-spreadsheets-DiyaGlSiteStack DistributionDomainName..."
+          PROD_DIYA_GL=$(aws cloudformation describe-stacks \
+            --stack-name prod-spreadsheets-DiyaGlSiteStack \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+            --output text 2>/dev/null || echo "")
+          echo "Prod diya-gl: ${PROD_DIYA_GL:-not found}"
+
           echo "ci-spreadsheets-cloudfront-domain=${CI_SS}" | tee -a "$GITHUB_OUTPUT"
           echo "prod-spreadsheets-cloudfront-domain=${PROD_SS}" | tee -a "$GITHUB_OUTPUT"
           echo "spreadsheets-cloudfront-domain=${SS}" | tee -a "$GITHUB_OUTPUT"
           echo "ci-spreadsheets-holding-cloudfront-domain=${CI_SS_HOLD}" | tee -a "$GITHUB_OUTPUT"
           echo "prod-spreadsheets-holding-cloudfront-domain=${PROD_SS_HOLD}" | tee -a "$GITHUB_OUTPUT"
+          echo "ci-diya-gl-cloudfront-domain=${CI_DIYA_GL}" | tee -a "$GITHUB_OUTPUT"
+          echo "prod-diya-gl-cloudfront-domain=${PROD_DIYA_GL}" | tee -a "$GITHUB_OUTPUT"
 
       # === Deploy RootDnsStack (root account) ===
 
@@ -409,6 +426,8 @@ jobs:
           echo "Spreadsheets domain: $SPREADSHEETS_CLOUDFRONT_DOMAIN"
           echo "CI spreadsheets holding domain: $CI_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN"
           echo "Prod spreadsheets holding domain: $PROD_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN"
+          echo "CI diya-gl domain: $CI_DIYA_GL_CLOUDFRONT_DOMAIN"
+          echo "Prod diya-gl domain: $PROD_DIYA_GL_CLOUDFRONT_DOMAIN"
           echo "Delegate accounts: $DELEGATE_ACCOUNTS"
           cd cdk-root \
             && npx cdk deploy \
@@ -428,6 +447,8 @@ jobs:
           SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.spreadsheets-cloudfront-domain }}
           CI_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.ci-spreadsheets-holding-cloudfront-domain }}
           PROD_SPREADSHEETS_HOLDING_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.prod-spreadsheets-holding-cloudfront-domain }}
+          CI_DIYA_GL_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.ci-diya-gl-cloudfront-domain }}
+          PROD_DIYA_GL_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.prod-diya-gl-cloudfront-domain }}
           DELEGATE_ACCOUNTS: "367191799875,972912397388,283165661847,064390746177"
 
       - name: Deploy ci-root-ApexStack (CDK)
