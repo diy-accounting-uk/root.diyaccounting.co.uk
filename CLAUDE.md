@@ -197,7 +197,7 @@ If the operator approved a plan, or the prompt says "complete X", **work it to t
 
 **A green test suite is a checkpoint, not a decision point.** Neither is a landed phase, a clean commit, or a tidy summary. Those are the middle of the work, and they feel like the end because they feel finished — that is the trap. The pull is strongest exactly when a chunk completes well.
 
-Only three things stop the work: a hard safety rule; a genuine blocker with no next action left anywhere in the plan; or the operator saying stop. "Shall I continue?", "Want me to carry on with the rest?" — if the plan already answers it, the question is not caution, it is the session ending itself for no reason. Ask only what the plan genuinely does not decide, and ask it *before* the work, not as a way to pause in the middle.
+Only three things stop the work: a hard safety rule; a genuine blocker with no next action left anywhere in the plan; or the operator saying stop. "Shall I continue?", "Want me to carry on with the rest?" — if the plan already answers it, the question is not caution, it is the session ending itself for no reason. Ask only what the plan genuinely does not decide, and ask it _before_ the work, not as a way to pause in the middle.
 
 **The companion rule: write status as you go, not at the end.** If a phase closes, mark it in its plan doc and delete its line from any live board (e.g. NEXT.md) **in the same commit as the fix**. Status written at the end is status never written. Sub-agents get the same instruction, and the right to edit their own rows.
 
@@ -246,7 +246,7 @@ Claude sessions on this machine pass messages as plain Markdown, no daemon: appe
 
 **Two kinds of message, nothing else**, both about a change in the recipient's repository: a change you need them to make because you cannot, or a change you have made that their own work is blocked on. Never status, progress, "one line here when it lands", ideas, suggestions or acknowledgements, and never to track what another session is doing — commits, plan documents and the corpus index are the record. The test: does this ask them to change something, or tell them something they are blocked on has changed? If neither, do not send it.
 
-**Message format** (append to the *recipient's* inbox; stamp with `date -u +%FT%TZ`):
+**Message format** (append to the _recipient's_ inbox; stamp with `date -u +%FT%TZ`):
 
 ```
 
@@ -270,14 +270,14 @@ This is a **multi-project workspace**. Each subdirectory is its own git reposito
 
 All repositories live in the **`diy-accounting-uk` GitHub org** — the `antonycc/*` forks are archived pre-migration copies; never push to them.
 
-| Directory | Repository | Status | Purpose |
-|-----------|-----------|--------|---------|
-| `submit.diyaccounting.co.uk/` | `diy-accounting-uk/submit.diyaccounting.co.uk` | **Active** | VAT submission app (Lambda, DynamoDB, Cognito, HMRC MTD API); primary development focus |
-| `spreadsheets.diyaccounting.co.uk/` | `diy-accounting-uk/spreadsheets.diyaccounting.co.uk` | **Active** | Spreadsheets site + package pipeline (S3 + CloudFront); nightly automated package commits |
-| `www.diyaccounting.co.uk/` | `diy-accounting-uk/www.diyaccounting.co.uk` | **Active** | Gateway static site (S3 + CloudFront) |
-| `root.diyaccounting.co.uk/` | `diy-accounting-uk/root.diyaccounting.co.uk` | **Active** | Root AWS account — Route53 DNS, holding page |
-| `diy-accounting-archive/` | `diy-accounting-uk/diy-accounting-archive` | Archived | Pre-migration spreadsheets repo, kept for history — do not develop here |
-| _not checked out here_ | `diy-accounting-uk/homebrew-diya-gl` | **Active** | Homebrew tap for `diya-gl`; `Formula/diya-gl.rb` is regenerated from the npm registry. Read it with `gh api`, don't clone it into this workspace |
+| Directory                           | Repository                                           | Status     | Purpose                                                                                                                                          |
+| ----------------------------------- | ---------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `submit.diyaccounting.co.uk/`       | `diy-accounting-uk/submit.diyaccounting.co.uk`       | **Active** | VAT submission app (Lambda, DynamoDB, Cognito, HMRC MTD API); primary development focus                                                          |
+| `spreadsheets.diyaccounting.co.uk/` | `diy-accounting-uk/spreadsheets.diyaccounting.co.uk` | **Active** | Spreadsheets site + package pipeline (S3 + CloudFront); nightly automated package commits                                                        |
+| `www.diyaccounting.co.uk/`          | `diy-accounting-uk/www.diyaccounting.co.uk`          | **Active** | Gateway static site (S3 + CloudFront)                                                                                                            |
+| `root.diyaccounting.co.uk/`         | `diy-accounting-uk/root.diyaccounting.co.uk`         | **Active** | Root AWS account — Route53 DNS, holding page                                                                                                     |
+| `diy-accounting-archive/`           | `diy-accounting-uk/diy-accounting-archive`           | Archived   | Pre-migration spreadsheets repo, kept for history — do not develop here                                                                          |
+| _not checked out here_              | `diy-accounting-uk/homebrew-diya-gl`                 | **Active** | Homebrew tap for `diya-gl`; `Formula/diya-gl.rb` is regenerated from the npm registry. Read it with `gh api`, don't clone it into this workspace |
 
 **Each subdirectory has a `CLAUDE.md`** with project-specific instructions — always read it before working in that project. Each also carries a copy of this file's shared sections under "Shared conventions (the diy-accounting-limited estate)", so the repository stands alone; a change to a shared section is made here and in every copy.
 
@@ -300,14 +300,14 @@ AWS Organization Root (887764105431) ── Management
 └── submit-backup ──── 914216784828 ── Backup OU
 ```
 
-| Account | ID | Repository | SSO Profile |
-|---------|-----|-----------|-------------|
-| Management (root) | 887764105431 | `root.diyaccounting.co.uk` | `management` |
-| gateway | 283165661847 | `www.diyaccounting.co.uk` | `gateway` |
-| spreadsheets | 064390746177 | `spreadsheets.diyaccounting.co.uk` | `spreadsheets` |
-| submit-ci | 367191799875 | `submit.diyaccounting.co.uk` | `submit-ci` |
-| submit-prod | 972912397388 | `submit.diyaccounting.co.uk` | `submit-prod` |
-| submit-backup | 914216784828 | — | `submit-backup` |
+| Account           | ID           | Repository                         | SSO Profile     |
+| ----------------- | ------------ | ---------------------------------- | --------------- |
+| Management (root) | 887764105431 | `root.diyaccounting.co.uk`         | `management`    |
+| gateway           | 283165661847 | `www.diyaccounting.co.uk`          | `gateway`       |
+| spreadsheets      | 064390746177 | `spreadsheets.diyaccounting.co.uk` | `spreadsheets`  |
+| submit-ci         | 367191799875 | `submit.diyaccounting.co.uk`       | `submit-ci`     |
+| submit-prod       | 972912397388 | `submit.diyaccounting.co.uk`       | `submit-prod`   |
+| submit-backup     | 914216784828 | —                                  | `submit-backup` |
 
 ### AWS CLI Access
 
@@ -410,6 +410,7 @@ or a series number at the end (`claude/a-few-batches-1`,
 3. **Request upfront** — Ask for all permissions at the start, not piecemeal during execution
 
 **If a permission is missing mid-task:**
+
 - Continue working on other parts that don't require the missing permission
 - Run background tasks that can proceed independently
 - Only block and ask when you've exhausted all parallel work options
@@ -463,7 +464,6 @@ wrong, what is right.
 write "it's 06:00", "at this hour", "that will keep until morning". Only a hard safety rule, a
 genuine blocker with no next action, or the operator saying stop ends work.
 
-
 For every human-facing surface — docs, code comments, commit messages, chat replies: short sentences, active voice, everyday words. Lead with the key fact. Never document capability walls in live docs — what a system can't do today is a horizon to name, not an essence to declare ("permanently", "impossible", "out of scope forever" are purge words in forward-looking prose; decisions and safety invariants stated as such are fine).
 
 #### Answer shape: the fact first, then the list
@@ -484,20 +484,20 @@ If the sentence loses no information the reader could act on, it was stance; cut
 synonym that would take its place.** Apply the test to every human-facing surface: chat replies,
 commit messages, docs, comments, PR bodies.
 
-| Common name | What it performs | Shape | Fix |
-|---|---|---|---|
-| Sincerity / assurance markers (performative assurance) | "I mean this one" | genuinely, truly, actually, really, honestly, to be clear, in fact, it's worth noting | State it. A claim asserted plainly is already asserted; the marker implies the others were not |
-| Negative parallelism (negation framing) | Defines by rejecting a concept nobody raised | not X but Y; not just X, it's Y; X rather than Y; filename only, no path; no X, no Y | Say Y. If X was a real misreading someone made, name who and where |
-| Significance signposting (trailing significance) | Tells the reader it matters instead of showing the cause | and that's the load-bearing part; here's why that matters; the key insight is; which is the point; this is important because; -ing tails ("…, underscoring its role") | Fact, then "because <cause>". Nothing else |
-| Work narration (meta-commentary) | Shows effort | I found, I confirmed, I'll now, let me look at, I traced, having checked | The tool calls show the work. Give the result |
-| Sycophantic opener | Flatters before answering | great question, you're right to ask, good catch, absolutely | Answer |
-| Service closer | Offers help already implied | let me know if, would you like me to, happy to, I can also | Stop at the last fact. If a next step exists, it is a numbered step, not an offer |
-| Hedging / vague attribution (soft sycophancy) | Avoids committing | it's possible that, some might argue, generally, tends to, one perspective, arguably | Commit, with the evidence. A real uncertainty gets a number or a named unknown |
-| Rule of three / snappy triad | Cadence over content | fast, reliable, and secure; three parallel clauses by reflex | The true count of items, however many |
-| Punctuation as glue | Drama in place of a connective | em-dashes joining clauses; the colon reveal ("the answer: X") | A full stop, a comma, or "because" |
-| Restatement / summary conclusion | Says it twice | closing paragraph that repeats the list; "in short"; "to summarise" | End on the last fact |
-| Unearned profundity / filler | Weight without content | something shifted; this changes things; at its core; fundamentally | Delete |
-| Comparative negatives on scope | Invents a wider ask to narrow it | "no need to X", "you don't have to Y", "rather than Z" when no one proposed X, Y or Z | State what to do |
+| Common name                                            | What it performs                                         | Shape                                                                                                                                                                 | Fix                                                                                            |
+| ------------------------------------------------------ | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Sincerity / assurance markers (performative assurance) | "I mean this one"                                        | genuinely, truly, actually, really, honestly, to be clear, in fact, it's worth noting                                                                                 | State it. A claim asserted plainly is already asserted; the marker implies the others were not |
+| Negative parallelism (negation framing)                | Defines by rejecting a concept nobody raised             | not X but Y; not just X, it's Y; X rather than Y; filename only, no path; no X, no Y                                                                                  | Say Y. If X was a real misreading someone made, name who and where                             |
+| Significance signposting (trailing significance)       | Tells the reader it matters instead of showing the cause | and that's the load-bearing part; here's why that matters; the key insight is; which is the point; this is important because; -ing tails ("…, underscoring its role") | Fact, then "because <cause>". Nothing else                                                     |
+| Work narration (meta-commentary)                       | Shows effort                                             | I found, I confirmed, I'll now, let me look at, I traced, having checked                                                                                              | The tool calls show the work. Give the result                                                  |
+| Sycophantic opener                                     | Flatters before answering                                | great question, you're right to ask, good catch, absolutely                                                                                                           | Answer                                                                                         |
+| Service closer                                         | Offers help already implied                              | let me know if, would you like me to, happy to, I can also                                                                                                            | Stop at the last fact. If a next step exists, it is a numbered step, not an offer              |
+| Hedging / vague attribution (soft sycophancy)          | Avoids committing                                        | it's possible that, some might argue, generally, tends to, one perspective, arguably                                                                                  | Commit, with the evidence. A real uncertainty gets a number or a named unknown                 |
+| Rule of three / snappy triad                           | Cadence over content                                     | fast, reliable, and secure; three parallel clauses by reflex                                                                                                          | The true count of items, however many                                                          |
+| Punctuation as glue                                    | Drama in place of a connective                           | em-dashes joining clauses; the colon reveal ("the answer: X")                                                                                                         | A full stop, a comma, or "because"                                                             |
+| Restatement / summary conclusion                       | Says it twice                                            | closing paragraph that repeats the list; "in short"; "to summarise"                                                                                                   | End on the last fact                                                                           |
+| Unearned profundity / filler                           | Weight without content                                   | something shifted; this changes things; at its core; fundamentally                                                                                                    | Delete                                                                                         |
+| Comparative negatives on scope                         | Invents a wider ask to narrow it                         | "no need to X", "you don't have to Y", "rather than Z" when no one proposed X, Y or Z                                                                                 | State what to do                                                                               |
 
 **Why this angers people and gets worse each time.** Each instance taxes the reader to receive
 nothing; the "genuinely" implies the unmarked sentences were less true; the negation invents a
@@ -510,7 +510,6 @@ reasoning chain is harder to follow, because the facts are interleaved with stan
 **Why the pull exists.** These forms are statistically common in the training text (LinkedIn,
 marketing, essay prose) and each one makes a sentence feel finished and decisive for free. That
 feeling is the trap; the functional delete test is the counter.
-
 
 ### Deployment & Infrastructure Workflow
 
