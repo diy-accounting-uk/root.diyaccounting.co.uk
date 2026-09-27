@@ -66,7 +66,6 @@ public class SubmitSharedNames {
     public String publicDomainName;
     public String cognitoDomainName;
     public String holdingDomainName;
-    public String simulatorDomainName;
     public String baseUrl;
     public String envBaseUrl;
     public String publicBaseUrl;
@@ -108,7 +107,6 @@ public class SubmitSharedNames {
     public String apexStackId;
     public String backupStackId;
     public String activityStackId;
-    public String simulatorStackId;
     public String ecrStackId;
     public String ue1EcrStackId;
     public String ecrRepositoryArn;
@@ -425,7 +423,6 @@ public class SubmitSharedNames {
         this.holdingDomainName = "prod".equals(props.envName)
                 ? "holding.%s".formatted(props.hostedZoneName)
                 : "%s-holding.%s".formatted(props.envName, props.hostedZoneName);
-        this.simulatorDomainName = "%s-simulator.%s".formatted(props.envName, props.hostedZoneName);
         this.deploymentDomainName = "%s.%s.%s"
                 .formatted(
                         props.deploymentName,
@@ -447,7 +444,6 @@ public class SubmitSharedNames {
         this.apexStackId = "%s-env-ApexStack".formatted(props.envName);
         this.backupStackId = "%s-env-BackupStack".formatted(props.envName);
         this.activityStackId = "%s-env-ActivityStack".formatted(props.envName);
-        this.simulatorStackId = "%s-env-SimulatorStack".formatted(props.envName);
         this.ecrStackId = "%s-env-EcrStack".formatted(props.envName);
         this.ue1EcrStackId = "%s-env-EcrUE1Stack".formatted(props.envName);
         this.ecrRepositoryArn = "arn:aws:ecr:%s:%s:repository/%s-ecr"

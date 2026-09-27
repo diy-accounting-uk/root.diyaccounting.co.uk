@@ -199,9 +199,6 @@ KEEP_NAMES = {
     # Holding
     f"ci-holding.{ZONE}.",
     f"holding.{ZONE}.",
-    # Simulator
-    f"ci-simulator.{ZONE}.",
-    f"prod-simulator.{ZONE}.",
     # Submit apex aliases (managed by deploy workflow)
     f"ci-submit.{ZONE}.",
     f"prod-submit.{ZONE}.",
