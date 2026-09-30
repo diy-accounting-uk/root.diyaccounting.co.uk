@@ -5,7 +5,7 @@
 
 Procedure for moving live traffic onto a maintenance page and back, across all four
 `diyaccounting.co.uk` services. Architecture and design rationale live in
-`PLAN_HOLDING_ARCHITECTURE.md`; this document is the operational procedure only.
+`../private.diyaccounting.co.uk/engineering/archive/PLAN_HOLDING_ARCHITECTURE.md`; this document is the operational procedure only.
 
 ## What this repo owns
 
