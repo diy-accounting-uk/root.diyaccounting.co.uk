@@ -78,8 +78,8 @@ while [[ $# -gt 0 ]]; do
       echo "  spreadsheets -> spreadsheets-github-actions-role, spreadsheets-deployment-role"
       echo ""
       echo "Example:"
-      echo "  $0 --account-id 972912397388 --account-name submit-prod --profile submit-prod"
-      echo "  $0 --account-id 234567890123 --account-name gateway --profile gateway"
+      echo "  $0 --account-id 972912397388 --account-name submit-prod --profile diya-submit-prod"
+      echo "  $0 --account-id 234567890123 --account-name gateway --profile diya-gateway"
       exit 0
       ;;
     *)

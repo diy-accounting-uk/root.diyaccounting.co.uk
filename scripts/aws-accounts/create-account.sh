@@ -25,7 +25,7 @@ NC='\033[0m'
 # --- Defaults ---
 ACCOUNT_NAME=""
 EMAIL=""
-PROFILE="management"
+PROFILE="diya-management"
 OU_NAME="Workloads"
 
 # --- Parse arguments ---
@@ -57,7 +57,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --email <email>         Root email for the account (e.g., 'aws+gateway@diyaccounting.co.uk')"
       echo ""
       echo "Options:"
-      echo "  --profile <profile>     AWS CLI profile with Organizations access (default: management)"
+      echo "  --profile <profile>     AWS CLI profile with Organizations access (default: diya-management)"
       echo "  --ou-name <ou>          Organizational Unit to move account to (default: Workloads)"
       echo ""
       echo "What it does:"

@@ -25,13 +25,13 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # --- Defaults ---
-PROFILE="management"
+PROFILE="diya-management"
 HOSTED_ZONE_ID="Z0315522208PWZSSBI9AL"
 DRY_RUN=false
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # AWS account profiles
-ACCOUNT_PROFILES=("submit-ci" "submit-prod" "gateway" "spreadsheets" "management")
+ACCOUNT_PROFILES=("diya-submit-ci" "diya-submit-prod" "diya-gateway" "diya-spreadsheets" "diya-management")
 
 # --- Parse arguments ---
 while [[ $# -gt 0 ]]; do
@@ -52,7 +52,7 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Options:"
       echo "  --dry-run              Show what would be deleted without making changes"
-      echo "  --profile <profile>    AWS CLI profile for management account (default: management)"
+      echo "  --profile <profile>    AWS CLI profile for management account (default: diya-management)"
       echo ""
       echo "What it does:"
       echo "  1. Queries CloudFront distributions from all AWS accounts"

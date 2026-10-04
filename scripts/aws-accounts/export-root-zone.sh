@@ -10,11 +10,11 @@
 #
 # Usage:
 #   ./scripts/aws-accounts/export-root-zone.sh
-#   AWS_PROFILE=management ./scripts/aws-accounts/export-root-zone.sh
+#   AWS_PROFILE=diya-management ./scripts/aws-accounts/export-root-zone.sh
 
 set -euo pipefail
 
-PROFILE="${AWS_PROFILE:-management}"
+PROFILE="${AWS_PROFILE:-diya-management}"
 HOSTED_ZONE_ID="Z0315522208PWZSSBI9AL"
 ZONE_NAME="diyaccounting.co.uk"
 OUT_DIR="root-zone"

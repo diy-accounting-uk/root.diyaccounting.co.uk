@@ -118,7 +118,7 @@ Scripts in `scripts/aws-accounts/` automate the full onboarding flow. Static web
 
 ### Prerequisites
 
-- AWS SSO access to the management account (`management` profile)
+- AWS SSO access to the management account (`diya-management` profile)
 - GitHub CLI (`gh`) authenticated with repo and variable permissions
 - Node.js >= 24, Java >= 25
 
@@ -137,7 +137,7 @@ Scripts in `scripts/aws-accounts/` automate the full onboarding flow. Static web
 ./scripts/aws-accounts/bootstrap-account.sh \
   --account-id <NEW_ACCOUNT_ID> \
   --account-name gateway \
-  --profile gateway \
+  --profile diya-gateway \
   --github-repo diy-accounting-uk/www.diyaccounting.co.uk
 
 # Step 4: Create repo, set GitHub variables, update root trust policy
@@ -229,8 +229,8 @@ Use SSO profiles:
 
 ```bash
 aws sso login --sso-session diyaccounting
-aws --profile management route53 list-hosted-zones
-aws --profile management cloudformation describe-stacks --stack-name root-RootDnsStack --region us-east-1
+aws --profile diya-management route53 list-hosted-zones
+aws --profile diya-management cloudformation describe-stacks --stack-name root-RootDnsStack --region us-east-1
 ```
 
 ## License
