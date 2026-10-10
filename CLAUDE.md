@@ -474,43 +474,6 @@ the list. Operator steps are numbered, one action per step, each with its URL or
 ownership stated once at the top ("Steps 1–5 are yours; 6–8 are Claude Code's"). A status question
 gets the blocker (or "nothing") on line one, then the ordered queue.
 
-#### Stance prose: the concept, not a word list
-
-Every pattern below is a sentence part that states no fact and performs a stance instead: I am
-sincere, this matters, I am careful, I am helpful, I am working. The reader pays attention and
-receives a performance. Blocking a word does not fix it: "genuinely" was asked to stop and
-"actually" appeared; the function moved to a synonym. **The test is functional: delete the part.
-If the sentence loses no information the reader could act on, it was stance; cut it, and cut any
-synonym that would take its place.** Apply the test to every human-facing surface: chat replies,
-commit messages, docs, comments, PR bodies.
-
-| Common name                                            | What it performs                                         | Shape                                                                                                                                                                 | Fix                                                                                            |
-| ------------------------------------------------------ | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Sincerity / assurance markers (performative assurance) | "I mean this one"                                        | genuinely, truly, actually, really, honestly, to be clear, in fact, it's worth noting                                                                                 | State it. A claim asserted plainly is already asserted; the marker implies the others were not |
-| Negative parallelism (negation framing)                | Defines by rejecting a concept nobody raised             | not X but Y; not just X, it's Y; X rather than Y; filename only, no path; no X, no Y                                                                                  | Say Y. If X was a real misreading someone made, name who and where                             |
-| Significance signposting (trailing significance)       | Tells the reader it matters instead of showing the cause | and that's the load-bearing part; here's why that matters; the key insight is; which is the point; this is important because; -ing tails ("…, underscoring its role") | Fact, then "because <cause>". Nothing else                                                     |
-| Work narration (meta-commentary)                       | Shows effort                                             | I found, I confirmed, I'll now, let me look at, I traced, having checked                                                                                              | The tool calls show the work. Give the result                                                  |
-| Sycophantic opener                                     | Flatters before answering                                | great question, you're right to ask, good catch, absolutely                                                                                                           | Answer                                                                                         |
-| Service closer                                         | Offers help already implied                              | let me know if, would you like me to, happy to, I can also                                                                                                            | Stop at the last fact. If a next step exists, it is a numbered step, not an offer              |
-| Hedging / vague attribution (soft sycophancy)          | Avoids committing                                        | it's possible that, some might argue, generally, tends to, one perspective, arguably                                                                                  | Commit, with the evidence. A real uncertainty gets a number or a named unknown                 |
-| Rule of three / snappy triad                           | Cadence over content                                     | fast, reliable, and secure; three parallel clauses by reflex                                                                                                          | The true count of items, however many                                                          |
-| Punctuation as glue                                    | Drama in place of a connective                           | em-dashes joining clauses; the colon reveal ("the answer: X")                                                                                                         | A full stop, a comma, or "because"                                                             |
-| Restatement / summary conclusion                       | Says it twice                                            | closing paragraph that repeats the list; "in short"; "to summarise"                                                                                                   | End on the last fact                                                                           |
-| Unearned profundity / filler                           | Weight without content                                   | something shifted; this changes things; at its core; fundamentally                                                                                                    | Delete                                                                                         |
-| Comparative negatives on scope                         | Invents a wider ask to narrow it                         | "no need to X", "you don't have to Y", "rather than Z" when no one proposed X, Y or Z                                                                                 | State what to do                                                                               |
-
-**Why this angers people and gets worse each time.** Each instance taxes the reader to receive
-nothing; the "genuinely" implies the unmarked sentences were less true; the negation invents a
-misunderstanding and pins it on the reader; the signpost tells an expert what matters in their own
-product. After a correction, a synonym reads as the correction having been evaded, so trust falls
-with every recurrence and the prose becomes the thing the reader is now watching for instead of
-the answer. The cost lands on basic function: a question takes longer to get answered and a
-reasoning chain is harder to follow, because the facts are interleaved with stance.
-
-**Why the pull exists.** These forms are statistically common in the training text (LinkedIn,
-marketing, essay prose) and each one makes a sentence feel finished and decisive for free. That
-feeling is the trap; the functional delete test is the counter.
-
 ### Deployment & Infrastructure Workflow
 
 All projects use GitHub Actions for deployment. No direct AWS console access needed.
