@@ -430,6 +430,8 @@ jobs:
           echo "Prod diya-gl domain: $PROD_DIYA_GL_CLOUDFRONT_DOMAIN"
           echo "CI developer domain: $CI_DEVELOPER_CLOUDFRONT_DOMAIN"
           echo "Prod developer domain: $PROD_DEVELOPER_CLOUDFRONT_DOMAIN"
+          echo "CI marketing domain: $CI_MARKETING_CLOUDFRONT_DOMAIN"
+          echo "Prod marketing domain: $PROD_MARKETING_CLOUDFRONT_DOMAIN"
           echo "Delegate accounts: $DELEGATE_ACCOUNTS"
           cd cdk-root \
             && npx cdk deploy \
@@ -455,6 +457,8 @@ jobs:
           # role in, so the domains are repository variables set from the stacks' outputs.
           CI_DEVELOPER_CLOUDFRONT_DOMAIN: ${{ vars.CI_DEVELOPER_CLOUDFRONT_DOMAIN }}
           PROD_DEVELOPER_CLOUDFRONT_DOMAIN: ${{ vars.PROD_DEVELOPER_CLOUDFRONT_DOMAIN }}
+          CI_MARKETING_CLOUDFRONT_DOMAIN: ${{ vars.CI_MARKETING_CLOUDFRONT_DOMAIN }}
+          PROD_MARKETING_CLOUDFRONT_DOMAIN: ${{ vars.PROD_MARKETING_CLOUDFRONT_DOMAIN }}
           DELEGATE_ACCOUNTS: "367191799875,972912397388,283165661847,064390746177"
 
       - name: Deploy ci-root-ApexStack (CDK)

@@ -19,6 +19,8 @@ config-variables:
   - SUBMIT_REGIONAL_CERTIFICATE_ARN
   - CI_DEVELOPER_CLOUDFRONT_DOMAIN
   - PROD_DEVELOPER_CLOUDFRONT_DOMAIN
+  - CI_MARKETING_CLOUDFRONT_DOMAIN
+  - PROD_MARKETING_CLOUDFRONT_DOMAIN
 
 # Ignore patterns (regex)
 # - Shellcheck informational warnings that don't affect workflow execution

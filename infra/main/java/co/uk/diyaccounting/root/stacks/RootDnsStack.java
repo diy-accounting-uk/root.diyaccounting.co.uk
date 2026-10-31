@@ -44,8 +44,8 @@ import software.constructs.Construct;
  * - ci-holding.spreadsheets.diyaccounting.co.uk → CI spreadsheets holding CloudFront
  * - holding.spreadsheets.diyaccounting.co.uk → prod spreadsheets holding CloudFront
  * - local.submit.diyaccounting.co.uk → 127.0.0.1 (developer loopback, for the local TLS front door)
- * - one alias per entry of staticSiteAliases, for the static sites submit hosts (developer, and
- *   later marketing): the record name maps to the site's CloudFront distribution domain
+ * - one alias per entry of staticSiteAliases, for the static sites submit hosts (developer,
+ *   marketing): the record name maps to the site's CloudFront distribution domain
  * <p>
  * Also creates the diya-gl.co.uk and diya-gl.com hosted zones, with their own apex, www and ci
  * aliases to the DIYA-GL site CloudFront distributions:
