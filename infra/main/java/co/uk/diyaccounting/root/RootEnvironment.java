@@ -76,10 +76,19 @@ public class RootEnvironment {
         var prodDeveloperCfDomain = envOr(
                 "PROD_DEVELOPER_CLOUDFRONT_DOMAIN",
                 KindCdk.getContextValueString(app, "prodDeveloperCloudFrontDomain", ""));
+        var ciMarketingCfDomain = envOr(
+                "CI_MARKETING_CLOUDFRONT_DOMAIN",
+                KindCdk.getContextValueString(app, "ciMarketingCloudFrontDomain", ""));
+        var prodMarketingCfDomain = envOr(
+                "PROD_MARKETING_CLOUDFRONT_DOMAIN",
+                KindCdk.getContextValueString(app, "prodMarketingCloudFrontDomain", ""));
         Map<String, String> staticSiteAliases = new LinkedHashMap<>();
         staticSiteAliases.put("ci-developer", ciDeveloperCfDomain);
         staticSiteAliases.put("prod-developer", prodDeveloperCfDomain);
         staticSiteAliases.put("developer", prodDeveloperCfDomain);
+        staticSiteAliases.put("ci-marketing", ciMarketingCfDomain);
+        staticSiteAliases.put("prod-marketing", prodMarketingCfDomain);
+        staticSiteAliases.put("marketing", prodMarketingCfDomain);
         var localSubmitTargetIp =
                 envOr("LOCAL_SUBMIT_TARGET_IP", KindCdk.getContextValueString(app, "localSubmitTargetIp", ""));
 

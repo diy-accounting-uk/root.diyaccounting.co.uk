@@ -19,6 +19,8 @@
     "prodDiyaGlCloudFrontDomain": "",
     "ciDeveloperCloudFrontDomain": "",
     "prodDeveloperCloudFrontDomain": "",
+    "ciMarketingCloudFrontDomain": "",
+    "prodMarketingCloudFrontDomain": "",
     "localSubmitTargetIp": "127.0.0.1"
   }
 }

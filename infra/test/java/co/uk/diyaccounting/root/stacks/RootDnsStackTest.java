@@ -125,6 +125,20 @@ class RootDnsStackTest {
     }
 
     @Test
+    void writesTheMarketingAliasesBesideTheDeveloperOnes() {
+        Template template = synthStaticSites(Map.of(
+                "ci-developer", "dci.cloudfront.net",
+                "prod-developer", "dprod.cloudfront.net",
+                "developer", "dprod.cloudfront.net",
+                "ci-marketing", "mci.cloudfront.net",
+                "prod-marketing", "mprod.cloudfront.net",
+                "marketing", "mprod.cloudfront.net"));
+
+        // One A and one AAAA record per alias
+        template.resourceCountIs("Custom::AWS", 12);
+    }
+
+    @Test
     void skipsAStaticSiteEntryWhoseDomainIsBlank() {
         Template template = synthStaticSites(Map.of("ci-developer", "", "developer", "dprod.cloudfront.net"));
 
