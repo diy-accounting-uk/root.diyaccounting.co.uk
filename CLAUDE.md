@@ -87,7 +87,7 @@ npm run diagram:root           # Generate draw.io architecture diagram from CDK 
 
 **Java packages** (`co.uk.diyaccounting.root`):
 
-- `root` — `RootEnvironment.java` (entry point), `SubmitSharedNames.java` (shared config)
+- `root` — `RootEnvironment.java` (entry point), `SubmitSharedNames.java` (the four holding-page names `ApexStack` reads from the submit naming scheme)
 - `root.stacks` — `RootDnsStack.java`, `ApexStack.java`, `SubmitStackProps.java`
 - `root.utils` — `Kind.java` (logging), `KindCdk.java` (CDK utilities), `Route53AliasUpsert.java` (DNS alias), `ResourceNameUtils.java` (name conversion)
 
