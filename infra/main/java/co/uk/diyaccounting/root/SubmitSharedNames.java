@@ -23,7 +23,9 @@ public class SubmitSharedNames {
                 ? "holding.%s".formatted(props.hostedZoneName)
                 : "%s-holding.%s".formatted(props.envName, props.hostedZoneName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(envResourceNamePrefix);
-        this.distributionAccessLogDeliveryHoldingSourceName = "%s-holding-dist-logs-src".formatted(envResourceNamePrefix);
-        this.distributionAccessLogDeliveryHoldingDestinationName = "%s-holding-logs-dest".formatted(envResourceNamePrefix);
+        this.distributionAccessLogDeliveryHoldingSourceName =
+                "%s-holding-dist-logs-src".formatted(envResourceNamePrefix);
+        this.distributionAccessLogDeliveryHoldingDestinationName =
+                "%s-holding-logs-dest".formatted(envResourceNamePrefix);
     }
 }
