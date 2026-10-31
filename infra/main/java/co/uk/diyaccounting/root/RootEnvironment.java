@@ -15,7 +15,9 @@ import co.uk.diyaccounting.root.stacks.CostReportingUE1Stack.LinkedAccountBudget
 import co.uk.diyaccounting.root.stacks.RootDnsStack;
 import co.uk.diyaccounting.root.utils.KindCdk;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 
@@ -67,6 +69,16 @@ public class RootEnvironment {
                 "CI_DIYA_GL_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "ciDiyaGlCloudFrontDomain", ""));
         var prodDiyaGlCfDomain = envOr(
                 "PROD_DIYA_GL_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "prodDiyaGlCloudFrontDomain", ""));
+        // Static sites hosted from the submit repository; each name resolves to its distribution
+        var ciDeveloperCfDomain = envOr(
+                "CI_DEVELOPER_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "ciDeveloperCloudFrontDomain", ""));
+        var prodDeveloperCfDomain = envOr(
+                "PROD_DEVELOPER_CLOUDFRONT_DOMAIN",
+                KindCdk.getContextValueString(app, "prodDeveloperCloudFrontDomain", ""));
+        Map<String, String> staticSiteAliases = new LinkedHashMap<>();
+        staticSiteAliases.put("ci-developer", ciDeveloperCfDomain);
+        staticSiteAliases.put("prod-developer", prodDeveloperCfDomain);
+        staticSiteAliases.put("developer", prodDeveloperCfDomain);
         var localSubmitTargetIp =
                 envOr("LOCAL_SUBMIT_TARGET_IP", KindCdk.getContextValueString(app, "localSubmitTargetIp", ""));
 
@@ -94,6 +106,7 @@ public class RootEnvironment {
                 prodSpreadsheetsHoldingCfDomain,
                 ciDiyaGlCfDomain,
                 prodDiyaGlCfDomain,
+                staticSiteAliases,
                 localSubmitTargetIp,
                 delegateAccountIds);
         app.synth();
@@ -115,6 +128,7 @@ public class RootEnvironment {
             String prodSpreadsheetsHoldingCfDomain,
             String ciDiyaGlCfDomain,
             String prodDiyaGlCfDomain,
+            Map<String, String> staticSiteAliases,
             String localSubmitTargetIp,
             List<String> delegateAccountIds) {
         // Root account DNS management runs in us-east-1 (Route53 is global but CDK needs a region)
@@ -144,6 +158,7 @@ public class RootEnvironment {
                         .prodSpreadsheetsHoldingCloudFrontDomain(prodSpreadsheetsHoldingCfDomain)
                         .ciDiyaGlCloudFrontDomain(ciDiyaGlCfDomain)
                         .prodDiyaGlCloudFrontDomain(prodDiyaGlCfDomain)
+                        .staticSiteAliases(staticSiteAliases)
                         .localSubmitTargetIp(localSubmitTargetIp)
                         .delegateAccountIds(delegateAccountIds)
                         .build());
