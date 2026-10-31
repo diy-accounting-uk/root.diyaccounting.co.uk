@@ -10,6 +10,7 @@ import static co.uk.diyaccounting.root.utils.KindCdk.cfnOutput;
 
 import co.uk.diyaccounting.root.utils.Route53AliasUpsert;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Fn;
@@ -43,6 +44,8 @@ import software.constructs.Construct;
  * - ci-holding.spreadsheets.diyaccounting.co.uk → CI spreadsheets holding CloudFront
  * - holding.spreadsheets.diyaccounting.co.uk → prod spreadsheets holding CloudFront
  * - local.submit.diyaccounting.co.uk → 127.0.0.1 (developer loopback, for the local TLS front door)
+ * - one alias per entry of staticSiteAliases, for the static sites submit hosts (developer, and
+ *   later marketing): the record name maps to the site's CloudFront distribution domain
  * <p>
  * Also creates the diya-gl.co.uk and diya-gl.com hosted zones, with their own apex, www and ci
  * aliases to the DIYA-GL site CloudFront distributions:
@@ -131,6 +134,13 @@ public class RootDnsStack extends Stack {
         default String prodDiyaGlCloudFrontDomain() {
             return "";
         }
+
+        /**
+         * Aliases to CloudFront distributions of the static sites in the submit accounts, keyed by
+         * record name in the hosted zone (for example {@code ci-developer}). A blank domain skips
+         * its record.
+         */
+        Map<String, String> staticSiteAliases();
 
         /** Loopback IP for local.submit.diyaccounting.co.uk (developer machines). Empty to skip. */
         @Value.Default
@@ -274,6 +284,18 @@ public class RootDnsStack extends Stack {
                     this, "Spreadsheets", zone, "spreadsheets", props.spreadsheetsCloudFrontDomain());
             cfnOutput(this, "SpreadsheetsDomain", "spreadsheets." + props.hostedZoneName());
         }
+
+        // Static sites hosted from the submit repository: the distributions live in the submit
+        // accounts, which create no Route53 records of their own.
+        props.staticSiteAliases().forEach((recordName, cloudFrontDomain) -> {
+            if (cloudFrontDomain.isBlank()) {
+                return;
+            }
+            infof("Creating %s alias to %s", recordName, cloudFrontDomain);
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this, "StaticSite" + recordName, zone, recordName, cloudFrontDomain);
+            cfnOutput(this, "StaticSite" + recordName + "Domain", recordName + "." + props.hostedZoneName());
+        });
 
         // Developer loopback record: every machine that resolves this name reaches its own
         // localhost, where the local server terminates TLS with a Let's Encrypt certificate.

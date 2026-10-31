@@ -96,4 +96,38 @@ class RootDnsStackTest {
         template.resourceCountIs("AWS::Route53::HostedZone", 2);
         template.resourceCountIs("Custom::AWS", 0);
     }
+
+    private static Template synthStaticSites(Map<String, String> aliases) {
+        App app = new App();
+        return Template.fromStack(new RootDnsStack(
+                app,
+                "TestRootDnsStack",
+                RootDnsStack.RootDnsStackProps.builder()
+                        .env(Environment.builder()
+                                .account("887764105431")
+                                .region("us-east-1")
+                                .build())
+                        .hostedZoneName("diyaccounting.co.uk")
+                        .hostedZoneId("Z0315522208PWZSSBI9AL")
+                        .staticSiteAliases(aliases)
+                        .build()));
+    }
+
+    @Test
+    void writesOneAliasPerStaticSiteEntry() {
+        Template template = synthStaticSites(Map.of(
+                "ci-developer", "dci.cloudfront.net",
+                "prod-developer", "dprod.cloudfront.net",
+                "developer", "dprod.cloudfront.net"));
+
+        // One A and one AAAA record per alias
+        template.resourceCountIs("Custom::AWS", 6);
+    }
+
+    @Test
+    void skipsAStaticSiteEntryWhoseDomainIsBlank() {
+        Template template = synthStaticSites(Map.of("ci-developer", "", "developer", "dprod.cloudfront.net"));
+
+        template.resourceCountIs("Custom::AWS", 2);
+    }
 }
