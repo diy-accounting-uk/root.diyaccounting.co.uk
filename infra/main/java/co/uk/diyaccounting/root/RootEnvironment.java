@@ -71,7 +71,8 @@ public class RootEnvironment {
                 "PROD_DIYA_GL_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "prodDiyaGlCloudFrontDomain", ""));
         // Static sites hosted from the submit repository; each name resolves to its distribution
         var ciDeveloperCfDomain = envOr(
-                "CI_DEVELOPER_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "ciDeveloperCloudFrontDomain", ""));
+                "CI_DEVELOPER_CLOUDFRONT_DOMAIN",
+                KindCdk.getContextValueString(app, "ciDeveloperCloudFrontDomain", ""));
         var prodDeveloperCfDomain = envOr(
                 "PROD_DEVELOPER_CLOUDFRONT_DOMAIN",
                 KindCdk.getContextValueString(app, "prodDeveloperCloudFrontDomain", ""));
