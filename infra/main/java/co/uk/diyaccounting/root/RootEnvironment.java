@@ -160,7 +160,7 @@ public class RootEnvironment {
                         .deploymentName("ci")
                         .resourceNamePrefix("ci-root")
                         .cloudTrailEnabled("false")
-                        .sharedNames(buildHoldingSharedNames("ci", hostedZoneName, usEast1Env.getAccount()))
+                        .sharedNames(buildHoldingSharedNames("ci", hostedZoneName))
                         .hostedZoneName(hostedZoneName)
                         .hostedZoneId(hostedZoneId)
                         .holdingDocRootPath("../web/holding")
@@ -179,7 +179,7 @@ public class RootEnvironment {
                         .deploymentName("prod")
                         .resourceNamePrefix("prod-root")
                         .cloudTrailEnabled("false")
-                        .sharedNames(buildHoldingSharedNames("prod", hostedZoneName, usEast1Env.getAccount()))
+                        .sharedNames(buildHoldingSharedNames("prod", hostedZoneName))
                         .hostedZoneName(hostedZoneName)
                         .hostedZoneId(hostedZoneId)
                         .holdingDocRootPath("../web/holding")
@@ -257,17 +257,12 @@ public class RootEnvironment {
 
     /**
      * Builds the shared-names bundle ApexStack needs, scoped to the apex holding domain
-     * for the given environment. subDomainName is "holding" so the derived domain fields
-     * (envDomainName/publicDomainName) line up with the actual holding domain name.
+     * for the given environment.
      */
-    private static SubmitSharedNames buildHoldingSharedNames(String envName, String hostedZoneName, String account) {
+    private static SubmitSharedNames buildHoldingSharedNames(String envName, String hostedZoneName) {
         var props = new SubmitSharedNames.SubmitSharedNamesProps();
         props.hostedZoneName = hostedZoneName;
         props.envName = envName;
-        props.subDomainName = "holding";
-        props.deploymentName = envName;
-        props.regionName = "us-east-1";
-        props.awsAccount = account;
         return new SubmitSharedNames(props);
     }
 }
