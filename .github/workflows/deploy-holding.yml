@@ -97,12 +97,12 @@ jobs:
       HOSTED_ZONE_ID: ${{ vars.ROOT_HOSTED_ZONE_ID }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       # === Gateway account: the live distribution ===
 
       - name: Configure gateway account (OIDC)
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.GATEWAY_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -113,7 +113,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume gateway deployment role
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.GATEWAY_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -158,7 +158,7 @@ jobs:
       # === Management account: the holding distribution and the hosted zone ===
 
       - name: Configure root account (OIDC)
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -169,7 +169,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume root deployment role
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -215,7 +215,7 @@ jobs:
 
       - name: Configure gateway account for the handback (OIDC)
         if: ${{ needs.params.outputs.target == 'restore' }}
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.GATEWAY_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -227,7 +227,7 @@ jobs:
 
       - name: Assume gateway deployment role for the handback
         if: ${{ needs.params.outputs.target == 'restore' }}
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.GATEWAY_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -248,7 +248,7 @@ jobs:
 
       - name: Configure root account for Route53 (OIDC)
         if: ${{ needs.params.outputs.target == 'restore' }}
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -260,7 +260,7 @@ jobs:
 
       - name: Assume root deployment role for Route53
         if: ${{ needs.params.outputs.target == 'restore' }}
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}

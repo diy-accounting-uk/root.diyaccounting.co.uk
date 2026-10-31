@@ -137,10 +137,10 @@ jobs:
       # === Build tools (no AWS credentials needed) ===
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
@@ -151,7 +151,7 @@ jobs:
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
 
-      - uses: actions/setup-java@v6.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: "temurin"
           java-version: ${{ env.JAVA_VERSION }}
@@ -163,7 +163,7 @@ jobs:
       # === Lookup gateway CloudFront domains (gateway account) ===
 
       - name: Configure gateway account (OIDC)
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.GATEWAY_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -174,7 +174,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume gateway deployment role
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.GATEWAY_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -240,7 +240,7 @@ jobs:
       # === Lookup spreadsheets CloudFront domains (spreadsheets account) ===
 
       - name: Configure spreadsheets account (OIDC)
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SPREADSHEETS_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -251,7 +251,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume spreadsheets deployment role
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SPREADSHEETS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -339,7 +339,7 @@ jobs:
       # === Deploy RootDnsStack (root account) ===
 
       - name: Configure root account (OIDC)
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -350,7 +350,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume root deployment role
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
