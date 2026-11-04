@@ -23,6 +23,7 @@ import software.amazon.awscdk.services.iam.CompositePrincipal;
 import software.amazon.awscdk.services.iam.IPrincipal;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
+import software.amazon.awscdk.services.route53.CnameRecord;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
@@ -52,6 +53,10 @@ import software.constructs.Construct;
  * - diya-gl.co.uk / diya-gl.com (apex) → prod DIYA-GL site CloudFront
  * - www.diya-gl.co.uk / www.diya-gl.com → prod DIYA-GL site CloudFront
  * - ci.diya-gl.co.uk / ci.diya-gl.com → CI DIYA-GL site CloudFront
+ * <p>
+ * Google Search Console domain verification CNAME records:
+ * - blmvnokkkgkt.diyaccounting.co.uk
+ * - lbcjxmzamfi3.diya-gl.co.uk
  */
 public class RootDnsStack extends Stack {
 
@@ -210,6 +215,18 @@ public class RootDnsStack extends Stack {
             Route53AliasUpsert.upsertAliasToCloudFront(
                     this, "DiyaGlComCi", diyaGlComZone, "ci", props.ciDiyaGlCloudFrontDomain());
         }
+
+        // Google Search Console domain verification
+        CnameRecord.Builder.create(this, "SearchConsoleVerificationDiyaccounting")
+                .zone(zone)
+                .recordName("blmvnokkkgkt")
+                .domainName("gv-oxvz26pb6fpjaf.dv.googlehosted.com")
+                .build();
+        CnameRecord.Builder.create(this, "SearchConsoleVerificationDiyaGlCoUk")
+                .zone(diyaGlCoUkZone)
+                .recordName("lbcjxmzamfi3")
+                .domainName("gv-5364v5fcj5bxln.dv.googlehosted.com")
+                .build();
 
         // Phase 1: Gateway DNS records
         if (!props.ciGatewayCloudFrontDomain().isBlank()) {
