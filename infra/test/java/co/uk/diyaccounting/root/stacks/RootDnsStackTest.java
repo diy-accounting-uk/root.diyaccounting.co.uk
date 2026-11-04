@@ -65,6 +65,31 @@ class RootDnsStackTest {
     }
 
     @Test
+    void createsSearchConsoleVerificationCnameRecords() {
+        Template template = Template.fromStack(synthRootDnsStack("ci.cloudfront.net", "prod.cloudfront.net"));
+
+        template.resourceCountIs("AWS::Route53::RecordSet", 2);
+        template.hasResourceProperties(
+                "AWS::Route53::RecordSet",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "blmvnokkkgkt.diyaccounting.co.uk.",
+                        "Type",
+                        "CNAME",
+                        "ResourceRecords",
+                        List.of("gv-oxvz26pb6fpjaf.dv.googlehosted.com"))));
+        template.hasResourceProperties(
+                "AWS::Route53::RecordSet",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "lbcjxmzamfi3.diya-gl.co.uk.",
+                        "Type",
+                        "CNAME",
+                        "ResourceRecords",
+                        List.of("gv-5364v5fcj5bxln.dv.googlehosted.com"))));
+    }
+
+    @Test
     void delegateRolePolicyListsZonesByNameAndGrantsThreeHostedZoneArns() {
         Template template = Template.fromStack(synthRootDnsStack("ci.cloudfront.net", "prod.cloudfront.net"));
 
