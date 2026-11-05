@@ -27,6 +27,12 @@ class CostReportingUE1StackTest {
             new LinkedAccountBudget("972912397388", "submit-prod", 120),
             new LinkedAccountBudget("914216784828", "submit-backup", 5));
 
+    private static final Map<String, Object> PROD_ACCOUNT_ROOT = Map.of(
+            "AWS",
+            Map.of(
+                    "Fn::Join",
+                    List.of("", List.of("arn:", Map.of("Ref", "AWS::Partition"), ":iam::972912397388:root"))));
+
     private static CostReportingUE1Stack synthCostReportingUE1Stack() {
         App app = new App();
         return new CostReportingUE1Stack(
@@ -239,7 +245,7 @@ class CostReportingUE1StackTest {
                 Map.of(
                         "Sid", "AllowSubmitProdLambdaToSubscribe",
                         "Effect", "Allow",
-                        "Principal", Map.of("AWS", "arn:aws:iam::972912397388:root"),
+                        "Principal", PROD_ACCOUNT_ROOT,
                         "Action", "sns:Subscribe",
                         "Condition",
                                 Map.of(
@@ -279,9 +285,7 @@ class CostReportingUE1StackTest {
                                                                                 "Action",
                                                                                 "sts:AssumeRole",
                                                                                 "Principal",
-                                                                                Map.of(
-                                                                                        "AWS",
-                                                                                        "arn:aws:iam::972912397388:root"),
+                                                                                PROD_ACCOUNT_ROOT,
                                                                                 "Condition",
                                                                                 Map.of(
                                                                                         "ArnEquals",
