@@ -115,6 +115,53 @@ class RootDnsStackTest {
     }
 
     @Test
+    void certbotRoleTrustsOnlyTheRenewalWorkflowOnMainAndTheOperatorAndCreatesNoProvider() {
+        Template template = Template.fromStack(synthRootDnsStack("ci.cloudfront.net", "prod.cloudfront.net"));
+
+        template.hasResourceProperties(
+                "AWS::IAM::Role",
+                Match.objectLike(
+                        Map.of(
+                                "RoleName",
+                                "root-certbot-dns01",
+                                "AssumeRolePolicyDocument",
+                                Match.objectLike(
+                                        Map.of(
+                                                "Statement",
+                                                Match.arrayWith(
+                                                        List.of(
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "Action",
+                                                                                "sts:AssumeRole",
+                                                                                "Principal",
+                                                                                Match.objectLike(
+                                                                                        Map.of(
+                                                                                                "AWS",
+                                                                                                Match.anyValue())))),
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "Action",
+                                                                                "sts:AssumeRoleWithWebIdentity",
+                                                                                "Principal",
+                                                                                Map.of(
+                                                                                        "Federated",
+                                                                                        "arn:aws:iam::887764105431:oidc-provider/token.actions.githubusercontent.com"),
+                                                                                "Condition",
+                                                                                Map.of(
+                                                                                        "StringEquals",
+                                                                                        Map.of(
+                                                                                                "token.actions.githubusercontent.com:aud",
+                                                                                                "sts.amazonaws.com",
+                                                                                                "token.actions.githubusercontent.com:sub",
+                                                                                                "repo:diy-accounting-uk/submit.diyaccounting.co.uk:environment:ci",
+                                                                                                "token.actions.githubusercontent.com:job_workflow_ref",
+                                                                                                "diy-accounting-uk/submit.diyaccounting.co.uk/.github/workflows/local-tls-renew.yml@refs/heads/main")))))))))));
+        template.resourceCountIs("Custom::AWSCDKOpenIdConnectProvider", 0);
+        template.resourceCountIs("AWS::IAM::OIDCProvider", 0);
+    }
+
+    @Test
     void skipsDiyaGlAliasesWhenDomainsAreBlank() {
         Template template = Template.fromStack(synthRootDnsStack("", ""));
 

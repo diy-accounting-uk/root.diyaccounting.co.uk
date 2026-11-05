@@ -20,6 +20,8 @@ import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.iam.AccountPrincipal;
 import software.amazon.awscdk.services.iam.ArnPrincipal;
 import software.amazon.awscdk.services.iam.CompositePrincipal;
+import software.amazon.awscdk.services.iam.Effect;
+import software.amazon.awscdk.services.iam.FederatedPrincipal;
 import software.amazon.awscdk.services.iam.IPrincipal;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
@@ -64,6 +66,17 @@ public class RootDnsStack extends Stack {
     // identity so `aws --profile certbot-local sts assume-role` works from the operator's machine.
     private static final String OPERATOR_SSO_ROLE_ARN =
             "arn:aws:iam::887764105431:role/aws-reserved/sso.amazonaws.com/eu-west-2/AWSReservedSSO_AdministratorAccess_8d2385a3b85cdf3b";
+
+    // The GitHub OIDC provider that already exists in this account. The stack references it and never creates it.
+    private static final String GITHUB_OIDC_PROVIDER_ARN =
+            "arn:aws:iam::887764105431:oidc-provider/token.actions.githubusercontent.com";
+    private static final String GITHUB_OIDC_HOST = "token.actions.githubusercontent.com";
+
+    // The one workflow that renews the local.submit certificate, and the job environment it runs in.
+    private static final String CERTBOT_RENEW_SUBJECT =
+            "repo:diy-accounting-uk/submit.diyaccounting.co.uk:environment:ci";
+    private static final String CERTBOT_RENEW_WORKFLOW_REF =
+            "diy-accounting-uk/submit.diyaccounting.co.uk/.github/workflows/local-tls-renew.yml@refs/heads/main";
 
     @Value.Immutable
     public interface RootDnsStackProps extends StackProps {
@@ -338,6 +351,21 @@ public class RootDnsStack extends Stack {
                 .actions(List.of("route53:ChangeResourceRecordSets"))
                 .resources(List.of("arn:aws:route53:::hostedzone/" + props.hostedZoneId()))
                 .build());
+        // The scheduled renewal workflow in the submit repository assumes the same role by GitHub OIDC.
+        // Both the subject and the workflow reference must match, so no other workflow or branch gets in.
+        certbotRole
+                .getAssumeRolePolicy()
+                .addStatements(PolicyStatement.Builder.create()
+                        .effect(Effect.ALLOW)
+                        .actions(List.of("sts:AssumeRoleWithWebIdentity"))
+                        .principals(List.of(new FederatedPrincipal(GITHUB_OIDC_PROVIDER_ARN)))
+                        .conditions(Map.of(
+                                "StringEquals",
+                                Map.of(
+                                        GITHUB_OIDC_HOST + ":aud", "sts.amazonaws.com",
+                                        GITHUB_OIDC_HOST + ":sub", CERTBOT_RENEW_SUBJECT,
+                                        GITHUB_OIDC_HOST + ":job_workflow_ref", CERTBOT_RENEW_WORKFLOW_REF)))
+                        .build());
         cfnOutput(this, "CertbotDns01RoleArn", certbotRole.getRoleArn());
 
         // Cross-account IAM role for Route53 record management, reached by sts:AssumeRole from each
