@@ -255,6 +255,8 @@ public class RootEnvironment {
                         .linkedAccounts(linkedAccountBudgets(managementAccount))
                         .organisationBudgetLimitUsd(200)
                         .alertEmail("admin@diyaccounting.co.uk")
+                        .submitProdAccountId("972912397388")
+                        .trustedEventReaderRoleName("prod-env-trusted-event-issue")
                         .build());
     }
 
