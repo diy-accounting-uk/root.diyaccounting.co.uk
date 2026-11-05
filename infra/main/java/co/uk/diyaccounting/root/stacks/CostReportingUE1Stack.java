@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
+import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -20,11 +21,18 @@ import software.amazon.awscdk.services.budgets.CfnBudget;
 import software.amazon.awscdk.services.ce.CfnAnomalyMonitor;
 import software.amazon.awscdk.services.ce.CfnAnomalySubscription;
 import software.amazon.awscdk.services.ce.CfnCostCategory;
+import software.amazon.awscdk.services.iam.AccountPrincipal;
+import software.amazon.awscdk.services.iam.Effect;
+import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.iam.Role;
+import software.amazon.awscdk.services.iam.ServicePrincipal;
+import software.amazon.awscdk.services.sns.Topic;
 import software.constructs.Construct;
 
 /**
  * Org-wide billing control-plane resources: the CUR 2.0 Data Export, seven budgets, one cost
- * anomaly monitor and subscription, and the Workload cost category. All live in the management
+ * anomaly monitor with a daily email and an immediate SNS subscription, the topic those alerts
+ * publish to, the role that reads them back, and the Workload cost category. All live in the management
  * account, us-east-1 — the only region BCM Data Exports, Budgets and Cost Explorer serve
  * CloudFormation resource requests from, regardless of where the data itself is stored.
  *
@@ -39,6 +47,9 @@ public class CostReportingUE1Stack extends Stack {
     public final List<CfnBudget> budgets;
     public final CfnAnomalyMonitor anomalyMonitor;
     public final CfnAnomalySubscription anomalySubscription;
+    public final CfnAnomalySubscription immediateAnomalySubscription;
+    public final Topic budgetAlertsTopic;
+    public final Role trustedEventReadRole;
 
     /**
      * BCM Data Exports rejects {@code SELECT *} ("ValidationException: SELECT * is not
@@ -185,6 +196,12 @@ public class CostReportingUE1Stack extends Stack {
 
         String alertEmail();
 
+        /** The account whose trusted-event Lambda subscribes to the topic and assumes the read role. */
+        String submitProdAccountId();
+
+        /** The name of the role in {@code submitProdAccountId()} that may assume the read role. */
+        String trustedEventReaderRoleName();
+
         static ImmutableCostReportingUE1StackProps.Builder builder() {
             return ImmutableCostReportingUE1StackProps.builder();
         }
@@ -244,6 +261,47 @@ public class CostReportingUE1Stack extends Stack {
                 .rules(buildWorkloadRules(props.linkedAccounts()))
                 .build();
 
+        String managementAccountId = props.getEnv().getAccount();
+        this.budgetAlertsTopic = Topic.Builder.create(this, "BudgetAlertsTopic")
+                .topicName("root-budget-alerts")
+                .build();
+        // The topic stays unencrypted: AWS Budgets cannot publish to a topic that uses the AWS
+        // managed SNS key.
+        String topicArn = this.budgetAlertsTopic.getTopicArn();
+        this.budgetAlertsTopic.addToResourcePolicy(PolicyStatement.Builder.create()
+                .sid("AllowBudgetsToPublish")
+                .effect(Effect.ALLOW)
+                .principals(List.of(new ServicePrincipal("budgets.amazonaws.com")))
+                .actions(List.of("sns:Publish"))
+                .resources(List.of(topicArn))
+                .conditions(Map.of(
+                        "StringEquals", Map.of("aws:SourceAccount", managementAccountId),
+                        "ArnLike", Map.of("aws:SourceArn", "arn:aws:budgets::" + managementAccountId + ":*")))
+                .build());
+        this.budgetAlertsTopic.addToResourcePolicy(PolicyStatement.Builder.create()
+                .sid("AllowCostAnomalyDetectionToPublish")
+                .effect(Effect.ALLOW)
+                .principals(List.of(new ServicePrincipal("costalerts.amazonaws.com")))
+                .actions(List.of("sns:Publish"))
+                .resources(List.of(topicArn))
+                .conditions(Map.of("StringEquals", Map.of("aws:SourceAccount", managementAccountId)))
+                .build());
+        this.budgetAlertsTopic.addToResourcePolicy(PolicyStatement.Builder.create()
+                .sid("AllowSubmitProdLambdaToSubscribe")
+                .effect(Effect.ALLOW)
+                .principals(List.of(new AccountPrincipal(props.submitProdAccountId())))
+                .actions(List.of("sns:Subscribe"))
+                .resources(List.of(topicArn))
+                .conditions(Map.of(
+                        "StringEquals",
+                        Map.of("sns:Protocol", "lambda"),
+                        "StringLike",
+                        Map.of(
+                                "sns:Endpoint",
+                                "arn:aws:lambda:eu-west-2:" + props.submitProdAccountId()
+                                        + ":function:prod-env-trusted-event-to-github-issue*")))
+                .build());
+
         this.budgets = new ArrayList<>();
         for (var account : props.linkedAccounts()) {
             this.budgets.add(createBudget(
@@ -251,14 +309,16 @@ public class CostReportingUE1Stack extends Stack {
                     account.workloadName() + "-monthly-budget",
                     account.monthlyLimitUsd(),
                     Map.of("LinkedAccount", List.of(account.accountId())),
-                    props.alertEmail()));
+                    props.alertEmail(),
+                    topicArn));
         }
         this.budgets.add(createBudget(
                 "OrganisationBudget",
                 "organisation-monthly-budget",
                 props.organisationBudgetLimitUsd(),
                 null,
-                props.alertEmail()));
+                props.alertEmail(),
+                topicArn));
 
         this.anomalyMonitor = CfnAnomalyMonitor.Builder.create(this, "AnomalyMonitor")
                 .monitorName("org-service-spend")
@@ -278,6 +338,57 @@ public class CostReportingUE1Stack extends Stack {
                         """
                         {"Dimensions":{"Key":"ANOMALY_TOTAL_IMPACT_ABSOLUTE","MatchOptions":["GREATER_THAN_OR_EQUAL"],"Values":["15"]}}\
                         """)
+                .build();
+
+        // IMMEDIATE is the only frequency that sends to SNS, and it takes SNS subscribers only.
+        // The DAILY subscription above keeps the email path.
+        this.immediateAnomalySubscription = CfnAnomalySubscription.Builder.create(this, "ImmediateAnomalySubscription")
+                .subscriptionName("org-immediate-anomalies")
+                .frequency("IMMEDIATE")
+                .monitorArnList(List.of(this.anomalyMonitor.getAttrMonitorArn()))
+                .subscribers(List.of(CfnAnomalySubscription.SubscriberProperty.builder()
+                        .type("SNS")
+                        .address(topicArn)
+                        .build()))
+                .thresholdExpression(
+                        """
+                        {"Dimensions":{"Key":"ANOMALY_TOTAL_IMPACT_ABSOLUTE","MatchOptions":["GREATER_THAN_OR_EQUAL"],"Values":["15"]}}\
+                        """)
+                .build();
+
+        this.trustedEventReadRole = Role.Builder.create(this, "TrustedEventReadRole")
+                .roleName("root-trusted-event-read")
+                .assumedBy(new AccountPrincipal(props.submitProdAccountId())
+                        .withConditions(Map.of(
+                                "ArnEquals",
+                                Map.of(
+                                        "aws:PrincipalArn",
+                                        "arn:aws:iam::" + props.submitProdAccountId() + ":role/"
+                                                + props.trustedEventReaderRoleName()))))
+                .build();
+        // Route 53 Domains has no resource-level form for ListDomains, so the resource is "*".
+        this.trustedEventReadRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ListDomains")
+                .effect(Effect.ALLOW)
+                .actions(List.of("route53domains:ListDomains"))
+                .resources(List.of("*"))
+                .build());
+        this.trustedEventReadRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ViewBudgets")
+                .effect(Effect.ALLOW)
+                .actions(List.of("budgets:ViewBudget"))
+                .resources(List.of("arn:aws:budgets::" + managementAccountId + ":budget/*"))
+                .build());
+        this.trustedEventReadRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("GetAnomalies")
+                .effect(Effect.ALLOW)
+                .actions(List.of("ce:GetAnomalies"))
+                .resources(List.of(this.anomalyMonitor.getAttrMonitorArn()))
+                .build());
+
+        CfnOutput.Builder.create(this, "BudgetAlertsTopicArn").value(topicArn).build();
+        CfnOutput.Builder.create(this, "TrustedEventReadRoleArn")
+                .value(this.trustedEventReadRole.getRoleArn())
                 .build();
 
         infof("CostReportingUE1Stack %s created", this.getNode().getId());
@@ -301,18 +412,24 @@ public class CostReportingUE1Stack extends Stack {
 
     /**
      * A monthly COST budget alerting at 85% of actual spend and again when the forecast reaches
-     * 100%, both by email. costFilters is null for the org-wide budget, which carries no filter.
+     * 100%, both by email and to the SNS topic. costFilters is null for the org-wide budget, which carries no filter.
      */
     private CfnBudget createBudget(
             String constructId,
             String budgetName,
             double monthlyLimitUsd,
             Map<String, List<String>> costFilters,
-            String alertEmail) {
-        var subscribers = List.of(CfnBudget.SubscriberProperty.builder()
-                .subscriptionType("EMAIL")
-                .address(alertEmail)
-                .build());
+            String alertEmail,
+            String topicArn) {
+        var subscribers = List.of(
+                CfnBudget.SubscriberProperty.builder()
+                        .subscriptionType("EMAIL")
+                        .address(alertEmail)
+                        .build(),
+                CfnBudget.SubscriberProperty.builder()
+                        .subscriptionType("SNS")
+                        .address(topicArn)
+                        .build());
 
         var builder = CfnBudget.Builder.create(this, constructId)
                 .budget(CfnBudget.BudgetDataProperty.builder()

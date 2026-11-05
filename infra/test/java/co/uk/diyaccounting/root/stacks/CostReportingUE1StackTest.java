@@ -42,6 +42,8 @@ class CostReportingUE1StackTest {
                         .linkedAccounts(LINKED_ACCOUNTS)
                         .organisationBudgetLimitUsd(200)
                         .alertEmail("admin@diyaccounting.co.uk")
+                        .submitProdAccountId("972912397388")
+                        .trustedEventReaderRoleName("prod-env-trusted-event-issue")
                         .build());
     }
 
@@ -104,15 +106,20 @@ class CostReportingUE1StackTest {
 
         var emailSubscriber =
                 Match.objectLike(Map.of("SubscriptionType", "EMAIL", "Address", "admin@diyaccounting.co.uk"));
+        var snsSubscriber = Match.objectLike(Map.of(
+                "SubscriptionType", "SNS", "Address", Map.of("Ref", Match.stringLikeRegexp("BudgetAlertsTopic.*"))));
+        var bothSubscribers = Match.arrayEquals(List.of(emailSubscriber, snsSubscriber));
         var actualAt85Percent = Match.objectLike(Map.of(
                 "Notification",
                 Match.objectLike(Map.of("NotificationType", "ACTUAL", "Threshold", 85, "ThresholdType", "PERCENTAGE")),
                 "Subscribers",
-                Match.arrayWith(List.of(emailSubscriber))));
+                bothSubscribers));
         var forecastedAt100Percent = Match.objectLike(Map.of(
                 "Notification",
                 Match.objectLike(
-                        Map.of("NotificationType", "FORECASTED", "Threshold", 100, "ThresholdType", "PERCENTAGE"))));
+                        Map.of("NotificationType", "FORECASTED", "Threshold", 100, "ThresholdType", "PERCENTAGE")),
+                "Subscribers",
+                bothSubscribers));
         var expectedNotifications = List.of(actualAt85Percent, forecastedAt100Percent);
 
         template.hasResourceProperties(
@@ -136,22 +143,188 @@ class CostReportingUE1StackTest {
     }
 
     @Test
-    void anomalyMonitorAndSubscriptionMatchTheDesign() {
+    void everyBudgetNotificationHasOneEmailAndOneSnsSubscriber() {
+        Template template = Template.fromStack(synthCostReportingUE1Stack());
+
+        var budgets = template.findResources("AWS::Budgets::Budget");
+        assertEquals(7, budgets.size());
+        for (var budget : budgets.values()) {
+            @SuppressWarnings("unchecked")
+            var notifications = (List<Map<String, Object>>)
+                    ((Map<String, Object>) budget.get("Properties")).get("NotificationsWithSubscribers");
+            assertEquals(2, notifications.size());
+            for (var notification : notifications) {
+                @SuppressWarnings("unchecked")
+                var subscribers = (List<Map<String, Object>>) notification.get("Subscribers");
+                assertEquals(
+                        List.of("EMAIL", "SNS"),
+                        subscribers.stream().map(s -> s.get("SubscriptionType")).toList());
+            }
+        }
+    }
+
+    @Test
+    void anomalyMonitorAndSubscriptionsMatchTheDesign() {
         Template template = Template.fromStack(synthCostReportingUE1Stack());
 
         template.hasResourceProperties(
                 "AWS::CE::AnomalyMonitor",
                 Match.objectLike(Map.of("MonitorType", "DIMENSIONAL", "MonitorDimension", "SERVICE")));
+        template.resourceCountIs("AWS::CE::AnomalySubscription", 2);
 
+        var threshold =
+                Match.stringLikeRegexp("(?=.*ANOMALY_TOTAL_IMPACT_ABSOLUTE)(?=.*GREATER_THAN_OR_EQUAL)(?=.*15).*");
         template.hasResourceProperties(
                 "AWS::CE::AnomalySubscription",
                 Match.objectLike(Map.of(
-                        "Frequency", "DAILY",
+                        "SubscriptionName",
+                        "org-daily-anomalies",
+                        "Frequency",
+                        "DAILY",
                         "Subscribers",
-                                Match.arrayWith(List.of(Match.objectLike(
-                                        Map.of("Type", "EMAIL", "Address", "admin@diyaccounting.co.uk")))),
+                        Match.arrayEquals(List.of(
+                                Match.objectLike(Map.of("Type", "EMAIL", "Address", "admin@diyaccounting.co.uk")))),
                         "ThresholdExpression",
-                                Match.stringLikeRegexp(
-                                        "(?=.*ANOMALY_TOTAL_IMPACT_ABSOLUTE)(?=.*GREATER_THAN_OR_EQUAL)(?=.*15).*"))));
+                        threshold)));
+        template.hasResourceProperties(
+                "AWS::CE::AnomalySubscription",
+                Match.objectLike(Map.of(
+                        "SubscriptionName",
+                        "org-immediate-anomalies",
+                        "Frequency",
+                        "IMMEDIATE",
+                        "Subscribers",
+                        Match.arrayEquals(List.of(Match.objectLike(Map.of(
+                                "Type",
+                                "SNS",
+                                "Address",
+                                Map.of("Ref", Match.stringLikeRegexp("BudgetAlertsTopic.*")))))),
+                        "ThresholdExpression",
+                        threshold)));
+    }
+
+    @Test
+    void budgetAlertsTopicIsNamedAndUnencrypted() {
+        Template template = Template.fromStack(synthCostReportingUE1Stack());
+
+        template.resourceCountIs("AWS::SNS::Topic", 1);
+        var topics = template.findResources("AWS::SNS::Topic");
+        @SuppressWarnings("unchecked")
+        var properties = (Map<String, Object>) topics.values().iterator().next().get("Properties");
+        assertEquals("root-budget-alerts", properties.get("TopicName"));
+        assertTrue(!properties.containsKey("KmsMasterKeyId"), "topic must stay unencrypted for AWS Budgets");
+    }
+
+    @Test
+    void topicPolicyGrantsTheTwoServicesAndOneSubscriber() {
+        Template template = Template.fromStack(synthCostReportingUE1Stack());
+
+        template.resourceCountIs("AWS::SNS::TopicPolicy", 1);
+        var budgets = Match.objectLike(Map.of(
+                "Sid", "AllowBudgetsToPublish",
+                "Effect", "Allow",
+                "Principal", Map.of("Service", "budgets.amazonaws.com"),
+                "Action", "sns:Publish",
+                "Condition",
+                        Map.of(
+                                "StringEquals", Map.of("aws:SourceAccount", "887764105431"),
+                                "ArnLike", Map.of("aws:SourceArn", "arn:aws:budgets::887764105431:*"))));
+        var anomalies = Match.objectLike(Map.of(
+                "Sid", "AllowCostAnomalyDetectionToPublish",
+                "Effect", "Allow",
+                "Principal", Map.of("Service", "costalerts.amazonaws.com"),
+                "Action", "sns:Publish",
+                "Condition", Map.of("StringEquals", Map.of("aws:SourceAccount", "887764105431"))));
+        var subscribe = Match.objectLike(
+                Map.of(
+                        "Sid", "AllowSubmitProdLambdaToSubscribe",
+                        "Effect", "Allow",
+                        "Principal", Map.of("AWS", "arn:aws:iam::972912397388:root"),
+                        "Action", "sns:Subscribe",
+                        "Condition",
+                                Map.of(
+                                        "StringEquals", Map.of("sns:Protocol", "lambda"),
+                                        "StringLike",
+                                                Map.of(
+                                                        "sns:Endpoint",
+                                                        "arn:aws:lambda:eu-west-2:972912397388:function:prod-env-trusted-event-to-github-issue*"))));
+        template.hasResourceProperties(
+                "AWS::SNS::TopicPolicy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(
+                                Map.of("Statement", Match.arrayEquals(List.of(budgets, anomalies, subscribe)))))));
+    }
+
+    @Test
+    void readRoleTrustsOnlyTheNamedProdRole() {
+        Template template = Template.fromStack(synthCostReportingUE1Stack());
+
+        template.hasResourceProperties(
+                "AWS::IAM::Role",
+                Match.objectLike(
+                        Map.of(
+                                "RoleName",
+                                "root-trusted-event-read",
+                                "AssumeRolePolicyDocument",
+                                Match.objectLike(
+                                        Map.of(
+                                                "Statement",
+                                                Match.arrayEquals(
+                                                        List.of(
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "Effect",
+                                                                                "Allow",
+                                                                                "Action",
+                                                                                "sts:AssumeRole",
+                                                                                "Principal",
+                                                                                Map.of(
+                                                                                        "AWS",
+                                                                                        "arn:aws:iam::972912397388:root"),
+                                                                                "Condition",
+                                                                                Map.of(
+                                                                                        "ArnEquals",
+                                                                                        Map.of(
+                                                                                                "aws:PrincipalArn",
+                                                                                                "arn:aws:iam::972912397388:role/prod-env-trusted-event-issue")))))))))));
+    }
+
+    @Test
+    void readRolePolicyNamesEachResourceExceptListDomains() {
+        Template template = Template.fromStack(synthCostReportingUE1Stack());
+
+        template.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayEquals(List.of(
+                                        Match.objectLike(
+                                                Map.of("Action", "route53domains:ListDomains", "Resource", "*")),
+                                        Match.objectLike(
+                                                Map.of(
+                                                        "Action", "budgets:ViewBudget",
+                                                        "Resource", "arn:aws:budgets::887764105431:budget/*")),
+                                        Match.objectLike(
+                                                Map.of(
+                                                        "Action",
+                                                        "ce:GetAnomalies",
+                                                        "Resource",
+                                                        Map.of(
+                                                                "Fn::GetAtt",
+                                                                List.of(
+                                                                        Match.stringLikeRegexp("AnomalyMonitor.*"),
+                                                                        "MonitorArn")))))))))));
+    }
+
+    @Test
+    void stackOutputsTheTopicAndTheRoleArns() {
+        Template template = Template.fromStack(synthCostReportingUE1Stack());
+
+        var outputs = template.findOutputs("*");
+        assertTrue(outputs.containsKey("BudgetAlertsTopicArn"));
+        assertTrue(outputs.containsKey("TrustedEventReadRoleArn"));
     }
 }
