@@ -34,6 +34,10 @@ class CostReportingUE1StackTest {
                     List.of("", List.of("arn:", Map.of("Ref", "AWS::Partition"), ":iam::972912397388:root"))));
 
     private static CostReportingUE1Stack synthCostReportingUE1Stack() {
+        return synthCostReportingUE1Stack("admin@diyaccounting.co.uk");
+    }
+
+    private static CostReportingUE1Stack synthCostReportingUE1Stack(String alertEmail) {
         App app = new App();
         return new CostReportingUE1Stack(
                 app,
@@ -47,7 +51,7 @@ class CostReportingUE1StackTest {
                         .exportBucketRegion("eu-west-2")
                         .linkedAccounts(LINKED_ACCOUNTS)
                         .organisationBudgetLimitUsd(200)
-                        .alertEmail("admin@diyaccounting.co.uk")
+                        .alertEmail(alertEmail)
                         .submitProdAccountId("972912397388")
                         .trustedEventReaderRoleName("prod-env-trusted-event-issue")
                         .build());
@@ -167,6 +171,46 @@ class CostReportingUE1StackTest {
                         subscribers.stream().map(s -> s.get("SubscriptionType")).toList());
             }
         }
+    }
+
+    private static List<String> budgetNames(String alertEmail) {
+        var budgets = Template.fromStack(synthCostReportingUE1Stack(alertEmail)).findResources("AWS::Budgets::Budget");
+        return budgets.values().stream()
+                .map(resource -> {
+                    @SuppressWarnings("unchecked")
+                    var budget = (Map<String, Object>) ((Map<String, Object>) resource.get("Properties")).get("Budget");
+                    return (String) budget.get("BudgetName");
+                })
+                .sorted()
+                .toList();
+    }
+
+    @Test
+    void eachBudgetNameIsItsBaseNamePlusASixCharacterHexSuffix() {
+        var names = budgetNames("admin@diyaccounting.co.uk");
+
+        assertEquals(7, names.size());
+        var baseNames = List.of(
+                "management-monthly-budget",
+                "gateway-monthly-budget",
+                "spreadsheets-monthly-budget",
+                "submit-ci-monthly-budget",
+                "submit-prod-monthly-budget",
+                "submit-backup-monthly-budget",
+                "organisation-monthly-budget");
+        for (var base : baseNames) {
+            assertTrue(
+                    names.stream().anyMatch(name -> name.matches(base + "-[0-9a-f]{6}")),
+                    "no budget named " + base + "-<6 hex>");
+        }
+    }
+
+    @Test
+    void budgetNamesChangeWithTheAlertEmailAndRepeatWithTheSameProps() {
+        var names = budgetNames("admin@diyaccounting.co.uk");
+
+        assertEquals(names, budgetNames("admin@diyaccounting.co.uk"));
+        assertTrue(!names.equals(budgetNames("other@diyaccounting.co.uk")));
     }
 
     @Test

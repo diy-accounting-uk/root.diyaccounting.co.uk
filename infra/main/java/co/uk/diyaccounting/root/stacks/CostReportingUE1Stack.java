@@ -7,7 +7,11 @@ package co.uk.diyaccounting.root.stacks;
 
 import static co.uk.diyaccounting.root.utils.Kind.infof;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -178,6 +182,8 @@ public class CostReportingUE1Stack extends Stack {
             "tags",
             "cost_category");
 
+    private static final String BUDGET_ALERTS_TOPIC_NAME = "root-budget-alerts";
+
     /** One of the six linked accounts, its Workload cost-category name and its monthly budget. */
     public record LinkedAccountBudget(String accountId, String workloadName, double monthlyLimitUsd) {}
 
@@ -263,7 +269,7 @@ public class CostReportingUE1Stack extends Stack {
 
         String managementAccountId = props.getEnv().getAccount();
         this.budgetAlertsTopic = Topic.Builder.create(this, "BudgetAlertsTopic")
-                .topicName("root-budget-alerts")
+                .topicName(BUDGET_ALERTS_TOPIC_NAME)
                 .build();
         // The topic stays unencrypted: AWS Budgets cannot publish to a topic that uses the AWS
         // managed SNS key.
@@ -394,6 +400,15 @@ public class CostReportingUE1Stack extends Stack {
         infof("CostReportingUE1Stack %s created", this.getNode().getId());
     }
 
+    private static String sha256Hex(String text) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is always available", e);
+        }
+    }
+
     /** One rule per linked account, mapping its account ID to its Workload category name. */
     private static String buildWorkloadRules(List<LinkedAccountBudget> linkedAccounts) {
         StringBuilder rules = new StringBuilder("[");
@@ -431,9 +446,19 @@ public class CostReportingUE1Stack extends Stack {
                         .address(topicArn)
                         .build());
 
+        // A notification change replaces the budget, and CloudFormation creates the replacement
+        // before it deletes the old one, so the replacement needs a name that is free.
+        String definition = String.join(
+                "|",
+                alertEmail,
+                BUDGET_ALERTS_TOPIC_NAME,
+                "ACTUAL,GREATER_THAN,85,PERCENTAGE,EMAIL,SNS",
+                "FORECASTED,GREATER_THAN,100,PERCENTAGE,EMAIL,SNS");
+        String suffix = sha256Hex(definition).substring(0, 6);
+
         var builder = CfnBudget.Builder.create(this, constructId)
                 .budget(CfnBudget.BudgetDataProperty.builder()
-                        .budgetName(budgetName)
+                        .budgetName(budgetName + "-" + suffix)
                         .budgetType("COST")
                         .timeUnit("MONTHLY")
                         .budgetLimit(CfnBudget.SpendProperty.builder()
