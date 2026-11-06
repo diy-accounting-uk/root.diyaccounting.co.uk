@@ -37,9 +37,7 @@
     "type": "TXT",
     "owner": "email (DMARC)",
     "ttl": 60,
-    "values": [
-      "\"v=DMARC1; p=none; rua=mailto:support@diyaccounting.co.uk\""
-    ]
+    "values": ["\"v=DMARC1; p=none; rua=mailto:support@diyaccounting.co.uk\""]
   },
   {
     "name": "submit.diyaccounting.co.uk",
