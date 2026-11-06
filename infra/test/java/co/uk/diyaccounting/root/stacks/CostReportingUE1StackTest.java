@@ -34,7 +34,7 @@ class CostReportingUE1StackTest {
                     List.of("", List.of("arn:", Map.of("Ref", "AWS::Partition"), ":iam::972912397388:root"))));
 
     private static CostReportingUE1Stack synthCostReportingUE1Stack() {
-        return synthCostReportingUE1Stack("admin@diyaccounting.co.uk");
+        return synthCostReportingUE1Stack("support@diyaccounting.co.uk");
     }
 
     private static CostReportingUE1Stack synthCostReportingUE1Stack(String alertEmail) {
@@ -115,7 +115,7 @@ class CostReportingUE1StackTest {
         Template template = Template.fromStack(synthCostReportingUE1Stack());
 
         var emailSubscriber =
-                Match.objectLike(Map.of("SubscriptionType", "EMAIL", "Address", "admin@diyaccounting.co.uk"));
+                Match.objectLike(Map.of("SubscriptionType", "EMAIL", "Address", "support@diyaccounting.co.uk"));
         var snsSubscriber = Match.objectLike(Map.of(
                 "SubscriptionType", "SNS", "Address", Map.of("Ref", Match.stringLikeRegexp("BudgetAlertsTopic.*"))));
         var bothSubscribers = Match.arrayEquals(List.of(emailSubscriber, snsSubscriber));
@@ -187,7 +187,7 @@ class CostReportingUE1StackTest {
 
     @Test
     void eachBudgetNameIsItsBaseNamePlusASixCharacterHexSuffix() {
-        var names = budgetNames("admin@diyaccounting.co.uk");
+        var names = budgetNames("support@diyaccounting.co.uk");
 
         assertEquals(7, names.size());
         var baseNames = List.of(
@@ -207,9 +207,9 @@ class CostReportingUE1StackTest {
 
     @Test
     void budgetNamesChangeWithTheAlertEmailAndRepeatWithTheSameProps() {
-        var names = budgetNames("admin@diyaccounting.co.uk");
+        var names = budgetNames("support@diyaccounting.co.uk");
 
-        assertEquals(names, budgetNames("admin@diyaccounting.co.uk"));
+        assertEquals(names, budgetNames("support@diyaccounting.co.uk"));
         assertTrue(!names.equals(budgetNames("other@diyaccounting.co.uk")));
     }
 
@@ -233,7 +233,7 @@ class CostReportingUE1StackTest {
                         "DAILY",
                         "Subscribers",
                         Match.arrayEquals(List.of(
-                                Match.objectLike(Map.of("Type", "EMAIL", "Address", "admin@diyaccounting.co.uk")))),
+                                Match.objectLike(Map.of("Type", "EMAIL", "Address", "support@diyaccounting.co.uk")))),
                         "ThresholdExpression",
                         threshold)));
         template.hasResourceProperties(

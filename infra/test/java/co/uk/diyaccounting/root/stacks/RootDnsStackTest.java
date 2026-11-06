@@ -68,7 +68,7 @@ class RootDnsStackTest {
     void createsSearchConsoleVerificationCnameRecords() {
         Template template = Template.fromStack(synthRootDnsStack("ci.cloudfront.net", "prod.cloudfront.net"));
 
-        template.resourceCountIs("AWS::Route53::RecordSet", 2);
+        template.resourceCountIs("AWS::Route53::RecordSet", 3);
         template.hasResourceProperties(
                 "AWS::Route53::RecordSet",
                 Match.objectLike(Map.of(
@@ -87,6 +87,23 @@ class RootDnsStackTest {
                         "CNAME",
                         "ResourceRecords",
                         List.of("gv-5364v5fcj5bxln.dv.googlehosted.com"))));
+    }
+
+    @Test
+    void publishesADmarcRecordThatReportsToSupportAndRejectsNothing() {
+        Template template = Template.fromStack(synthRootDnsStack("ci.cloudfront.net", "prod.cloudfront.net"));
+
+        template.hasResourceProperties(
+                "AWS::Route53::RecordSet",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "_dmarc.diyaccounting.co.uk.",
+                        "Type",
+                        "TXT",
+                        "TTL",
+                        "60",
+                        "ResourceRecords",
+                        List.of("\"v=DMARC1; p=none; rua=mailto:support@diyaccounting.co.uk\""))));
     }
 
     @Test

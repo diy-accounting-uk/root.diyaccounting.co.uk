@@ -254,7 +254,7 @@ public class RootEnvironment {
                         .exportBucketRegion(euWest2Region)
                         .linkedAccounts(linkedAccountBudgets(managementAccount))
                         .organisationBudgetLimitUsd(200)
-                        .alertEmail("admin@diyaccounting.co.uk")
+                        .alertEmail("support@diyaccounting.co.uk")
                         .submitProdAccountId("972912397388")
                         .trustedEventReaderRoleName("prod-env-trusted-event-issue")
                         .build());
