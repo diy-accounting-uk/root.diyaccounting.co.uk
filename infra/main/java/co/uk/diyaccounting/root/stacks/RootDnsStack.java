@@ -12,6 +12,7 @@ import co.uk.diyaccounting.root.utils.Route53AliasUpsert;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Fn;
 import software.amazon.awscdk.Stack;
@@ -30,6 +31,7 @@ import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.route53.PublicHostedZone;
+import software.amazon.awscdk.services.route53.TxtRecord;
 import software.constructs.Construct;
 
 /**
@@ -239,6 +241,14 @@ public class RootDnsStack extends Stack {
                 .zone(diyaGlCoUkZone)
                 .recordName("lbcjxmzamfi3")
                 .domainName("gv-5364v5fcj5bxln.dv.googlehosted.com")
+                .build();
+
+        // DMARC aggregate reports go to the support mailbox; p=none asks receivers to report and not to reject
+        TxtRecord.Builder.create(this, "DmarcDiyaccounting")
+                .zone(zone)
+                .recordName("_dmarc")
+                .values(List.of("v=DMARC1; p=none; rua=mailto:support@diyaccounting.co.uk"))
+                .ttl(Duration.seconds(60))
                 .build();
 
         // Phase 1: Gateway DNS records

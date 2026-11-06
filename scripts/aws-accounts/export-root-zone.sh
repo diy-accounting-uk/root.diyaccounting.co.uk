@@ -81,6 +81,8 @@ data = json.load(open(zone_json_path))
 def categorize(name, rtype):
     if rtype == "MX":
         return "email (Google Workspace)"
+    if name.startswith("_dmarc."):
+        return "email (DMARC)"
     if "domainkey" in name:
         return "email (DKIM)"
     if rtype == "TXT" and name == zone_name:
