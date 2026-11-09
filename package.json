@@ -5,6 +5,7 @@
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {
+    "prepare": "node .githooks/install.mjs",
     "build": "./mvnw clean verify",
     "cdk:synth": "cd cdk-root && npx cdk synth --require-approval never --ci true --strict --validation && cd ..",
     "cdk:diff": "cd cdk-root && npx cdk diff && cd ..",
