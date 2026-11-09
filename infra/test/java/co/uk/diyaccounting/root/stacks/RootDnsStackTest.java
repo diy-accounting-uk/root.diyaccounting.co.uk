@@ -103,7 +103,7 @@ class RootDnsStackTest {
                         "TTL",
                         "60",
                         "ResourceRecords",
-                        List.of("\"v=DMARC1; p=none; rua=mailto:support@diyaccounting.co.uk\""))));
+                        List.of("\"v=DMARC1; p=quarantine; rua=mailto:support@diyaccounting.co.uk\""))));
     }
 
     @Test
