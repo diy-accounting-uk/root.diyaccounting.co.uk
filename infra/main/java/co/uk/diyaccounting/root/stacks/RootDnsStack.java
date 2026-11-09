@@ -243,7 +243,7 @@ public class RootDnsStack extends Stack {
                 .domainName("gv-5364v5fcj5bxln.dv.googlehosted.com")
                 .build();
 
-        // DMARC aggregate reports go to the support mailbox; p=quarantine asks receivers to put a failing message in spam
+        // DMARC reports go to the support mailbox; p=quarantine sends a failing message to spam
         TxtRecord.Builder.create(this, "DmarcDiyaccounting")
                 .zone(zone)
                 .recordName("_dmarc")
