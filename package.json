@@ -18,8 +18,7 @@
     "lint:workflows": "./scripts/validate-workflows.sh",
     "update-to-minor": "npx npm-check-updates --upgrade --enginesNode --target minor --verbose --install always",
     "update-to-latest": "npx npm-check-updates --upgrade --enginesNode --verbose --install always",
-    "update:java": "./scripts/update-java.sh",
-    "update:node": "npm run update-to-latest"
+    "update:java": "./scripts/update-java.sh"
   },
   "devDependencies": {
     "aws-cdk": "^2.1146.1",

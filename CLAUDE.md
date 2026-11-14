@@ -73,7 +73,6 @@ npm run lint:workflows         # Validate GitHub Actions workflow syntax (uses a
 npm run update-to-minor        # Update npm dependencies (minor versions)
 npm run update-to-greatest     # Update npm dependencies (latest non-alpha)
 npm run update:java            # Update Maven dependencies to latest versions
-npm run update:node            # Update npm dependencies to latest non-alpha versions
 npm run diagram:root           # Generate draw.io architecture diagram from CDK synth output
 ```
 
