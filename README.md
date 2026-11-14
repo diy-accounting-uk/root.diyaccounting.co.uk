@@ -53,7 +53,6 @@ npm run formatting               # Check formatting (Prettier + Spotless)
 npm run formatting-fix           # Auto-fix formatting
 npm run lint:workflows           # Validate GitHub Actions workflow syntax
 npm run update:java              # Update Maven dependencies to latest versions
-npm run update:node              # Update npm dependencies (latest non-alpha)
 npm run update-to-minor          # Update npm dependencies (minor versions only)
 npm run diagram:root             # Generate draw.io architecture diagram from CDK
 ```
@@ -125,28 +124,23 @@ Scripts in `scripts/aws-accounts/` automate the full onboarding flow. Static web
 ### Quick Start
 
 ```bash
-# Step 1: Create the AWS account (Organization + Workloads OU)
-./scripts/aws-accounts/create-account.sh \
-  --account-name gateway \
-  --email aws+gateway@diyaccounting.co.uk
+# Step 1: Create the AWS account in the Organization (Workloads OU) and configure
+#         SSO access in IAM Identity Center (manual — AWS console)
 
-# Step 2: Configure SSO access for the new account in IAM Identity Center
-#         (manual — add a permission set in the AWS console)
-
-# Step 3: Bootstrap CDK + OIDC + IAM roles
+# Step 2: Bootstrap CDK + OIDC + IAM roles
 ./scripts/aws-accounts/bootstrap-account.sh \
   --account-id <NEW_ACCOUNT_ID> \
   --account-name gateway \
   --profile diya-gateway \
   --github-repo diy-accounting-uk/www.diyaccounting.co.uk
 
-# Step 4: Create repo, set GitHub variables, update root trust policy
+# Step 3: Create repo, set GitHub variables, update root trust policy
 ./scripts/aws-accounts/setup-github-repo.sh \
   --account-id <NEW_ACCOUNT_ID> \
   --account-name gateway \
   --repo diy-accounting-uk/www.diyaccounting.co.uk
 
-# Step 5: Clone, initialise, and deploy
+# Step 4: Clone, initialise, and deploy
 gh repo clone diy-accounting-uk/www.diyaccounting.co.uk
 cd www.diyaccounting.co.uk
 # Update cdk.json, README.md, CLAUDE.md, workflow variable names
@@ -156,13 +150,6 @@ gh workflow run deploy.yml --ref main
 ```
 
 ### What Each Script Does
-
-**`create-account.sh`** — Creates an AWS account and moves it to the correct OU:
-
-- Creates the account in the AWS Organization
-- Polls until creation completes
-- Moves the account from the root to the Workloads OU (or other specified OU)
-- Outputs the new account ID and next steps
 
 **`bootstrap-account.sh`** — Bootstraps a new account for CDK and GitHub Actions:
 
@@ -183,12 +170,6 @@ gh workflow run deploy.yml --ref main
 - Full JSON export of all DNS records
 - BIND-format zone file (human-readable)
 - Extracts manually-managed records (email, domain verification)
-
-**`cleanup-zone.sh`** — Removes orphaned DNS records from old deployments:
-
-- Identifies CI branch records and old prod commit-hash records
-- Cross-references against live CloudFront distributions
-- Generates Route53 change batch and applies deletions (with confirmation)
 
 ### Manual Steps After Scripts
 
