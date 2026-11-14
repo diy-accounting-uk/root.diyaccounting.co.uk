@@ -365,9 +365,7 @@ stays accurate. Existing commits are not rewritten.
 
 **You may**: create branches, commit changes, push branches, open pull requests
 
-**Docs exception (operator, 2026-08-24)**: commits touching ONLY `.md` files may be pushed
-directly to `main` in all five repos — no branch or PR needed. Anything touching code,
-workflows, or config still goes through a PR.
+**Docs and Claude configuration exception (operator, 2026-08-24; widened 2026-11-14)**: commits touching only `.md` files, Claude Code configuration (`.claude/**`: skills, hooks, agents, settings) or the `cc` launcher are pushed directly to `main` in every repository, with no branch or PR; none of it is deployed or read by tests. Anything touching code, workflows or other config still goes through a PR.
 
 **You may NOT**: push code/config to main, delete branches, rewrite history
 
