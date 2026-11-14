@@ -71,7 +71,6 @@ npm run formatting             # Check formatting (Prettier + Spotless)
 npm run formatting-fix         # Auto-fix formatting
 npm run lint:workflows         # Validate GitHub Actions workflow syntax (uses actionlint)
 npm run update-to-minor        # Update npm dependencies (minor versions)
-npm run update-to-greatest     # Update npm dependencies (latest non-alpha)
 npm run update:java            # Update Maven dependencies to latest versions
 npm run diagram:root           # Generate draw.io architecture diagram from CDK synth output
 ```
