@@ -2,6 +2,7 @@
 name: orient-archive
 description: Read before any change, test or plan that touches ../diy-accounting-archive (the pre-migration spreadsheets repository, packages-published cuts, MANIFEST.toml, archive-packages.js): it is history, not a place to develop; which of its docs to follow in place of this repository's CLAUDE.md.
 ---
+
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 

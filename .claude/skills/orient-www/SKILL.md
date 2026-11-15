@@ -2,6 +2,7 @@
 name: orient-www
 description: Read before any change, test, workflow or plan in ../www.diyaccounting.co.uk (the gateway static site for diyaccounting.co.uk, its CloudFront redirects, GatewayStack, deploy.yml, the holding-page failover): which of that repository's docs and skills to follow in place of this repository's CLAUDE.md.
 ---
+
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 

@@ -2,6 +2,7 @@
 name: orient-spreadsheets
 description: Read before any change, test, workflow or plan in ../spreadsheets.diyaccounting.co.uk (Excel packages, generate-*.yml workflows, reconciliation checks, diya-gl and its npm release, the spreadsheets and diya-gl.co.uk sites, the npm test router, the pre-push hook): which of that repository's docs and skills to follow in place of this repository's CLAUDE.md.
 ---
+
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 

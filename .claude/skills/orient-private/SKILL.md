@@ -2,6 +2,7 @@
 name: orient-private
 description: Read before reading, writing or moving any file in ../private.diyaccounting.co.uk (regulator correspondence, strategy, finance, security findings, session reports, archived engineering plans, operator briefs): that repository has no CLAUDE.md, so this says which workspace docs apply.
 ---
+
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
