@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 #
-# cc: update Claude Code, then start it in this repository with every sibling
+# ccode: update Claude Code, then start it in this repository with every sibling
 # repository of the workspace added. --add-dir gives file access and loads each
 # sibling's skills; their CLAUDE.md files stay unloaded, so a session pays for a
 # sibling's rules only when it invokes that sibling's orient-* skill.
-# Arguments after cc pass through to claude: ./cc --model opus "fix the board"
+# Arguments after ccode pass through to claude: ./ccode --model opus "fix the board"
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
